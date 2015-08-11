@@ -1,0 +1,172 @@
+@(appsFromDB: List[String], timeLengths: List[String], keysToParse: List[String], aggrResults: List[Long], session: play.mvc.Http.Session, abbreviations : List[String], statsCollectionPeriod : Int)
+
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <title>Chat Statistics</title>
+        <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/main.css")">
+        <link rel="shortcut icon" type="image/png" href="@routes.Assets.at("images/favicon.ico")">
+        <script src="@routes.Assets.at("javascripts/dygraph-combined.js")" type="text/javascript"></script>
+    </head>
+    <body onload="setData()">
+
+        <!-- Left slide-left menu -->
+
+        <div class="settingsdiv">
+            <div id="updatesettingsdiv" class="settings">
+                <form action="/update-settings">
+                    <input type="hidden" id="timezoneOffset" name="timezoneOffset"/>
+                    <table class="center"><tr class="top"><td><h1>UPDATE SETTINGS</h1></td></tr></table>
+                    <hr>
+                    <table id="updatetable">
+                        <tr><td>
+                        Application id :</td><td><select name="appId" required="required" class="select-style" id="appId">
+                            @for(app <- appsFromDB) {
+                                <option>@app</option>
+                            }
+                        </select></td></tr>
+                        <tr><td>
+                        Time length :</td><td><input id="timeLengthValue" name="timeLengthValue" onclick="dropTextFieldValue()" placeholder="Insert an integer value here" type="number"/>
+                        </td></tr>
+                        <tr><td></td><td><select name="timeLength" required="required" class="select-style" id="timeLength">
+                            @for(timeLength <- timeLengths) {
+                                <option>@timeLength</option>
+                            }
+                        </select></td></tr>
+                        <div class="squaredThree">
+                            <tr><td>Aggregate results : </td><td id="aggrcheckbox"><input type="checkbox" name="aggregateResults" id="aggregateResults"></td></tr>
+                            @*<input type="checkbox" value="None" id="squaredThree" name="check" />*@
+                            <label for="aggregateResults"></label>
+                        </div>
+                    </table>
+                    <table class="center"><tr class="bottom"><td><button type="submit" class="myButton">UPDATE</button></td></tr></table>
+                </form>
+                <table class="center">
+                @if(aggrResults != null && aggrResults.length > 0){
+                    <hr>
+                    <tr class="top"><td><h1>AGGR. RESULTS</h1></td></tr>
+                }
+
+                <!-- Aggegated results -->
+                </table>
+                @if(aggrResults != null && aggrResults.length > 0){
+                    <hr>
+                <table id="aggregateresults" class="settings">
+                    @for(i <- 0 to aggrResults.size-1){
+                        <tr class="@abbreviations.get(i)_@i" title="@keysToParse.get(i + 1)"><td>@abbreviations.get(i) sum : </td><td>@aggrResults.get(i)</td></tr>
+                    }
+                </table>
+                    }
+            </div>
+        </div>
+
+        <!-- Everything except left side menu -->
+
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger"></label>
+
+        <div class="site-wrap">
+            <div id="headerdiv">
+                <table id="headertable">
+                    <tr>
+                        <td align="center">
+                            <span>Application Id :
+                                @if(session.get("appId")!=null){
+                                    @session.get("appId")
+                                }else{
+                                    -----
+                                }</span>
+                            <span>Time Length : @session.get("timeLengthValue") @session.get("timeLength") (s)</span>
+                            <span>Unit : @statsCollectionPeriod sec.</span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!--Graph-->
+
+            <div id="graphdiv"></div>
+
+            <!-- graph initialization -->
+            <script type="text/javascript">
+                  var labelsList = '@keysToParse'
+                  var dataset = '/resources/dataset@session.get("id")'
+                  dataset += ".csv"
+                  @if(session.get("appId")){
+                    var appId = "@session.get("appId")"
+                  }else{
+                    var appId = "-----"
+                  }
+                  @if(session.get("timeLengthValue") != null) {
+                    var timeLengthValue = @session.get("timeLengthValue")
+                  }else{
+                      var timeLengthValue = null
+                  }
+                  var visibilityList = []
+
+                  labelsList = labelsList.replace('[','')
+                  labelsList = labelsList.replace(']','')
+                  labelsList = labelsList.split(',')
+                  for (i = 0; i < labelsList.length; i++) {
+                    labelsList[i] = labelsList[i].trim()
+                    visibilityList.push(true)
+                  }
+
+                  g = new Dygraph(
+                    // containing div
+                    document.getElementById("graphdiv"),
+                    dataset,
+                    {
+                        labels : labelsList,
+                        title: 'Chat Statistics',
+                        legend: 'always',
+                        xlabel: 'Created at',
+                        ylabel: 'Value',
+                        visibility : visibilityList
+                        //stackedGraph : true
+                    }
+                  );
+                  //alter graph on checkbox change
+                  function change(el) {
+                    g.setVisibility(parseInt(el.id), el.checked)
+                  }
+
+                  //saves settings from the previous update and cleans the session
+                  function setData() {
+                    document.getElementById('appId').value = '@session.get("appId")'
+                    @if(session.get("timeLength") == null || session.get("timeLength").length == 0) {
+                        //aka: if null -> 'day'
+                        document.getElementById('timeLength').value = '@timeLengths.get(1)'} else {
+                        document.getElementById('timeLength').value = '@session.get("timeLength")'  }
+                        document.getElementById('timeLengthValue').value = '@session.get("timeLengthValue")'
+                        document.getElementById("timezoneOffset").value = new Date().getTimezoneOffset();
+                        aggregateResults = '@session.get("aggregateResults")';
+                        if (aggregateResults != '') {
+                            document.getElementById("aggregateResults").checked = true;
+                        }
+
+                        '@session.remove("aggregateResults")'
+                  }
+            </script>
+
+            <div></div>
+
+            <!-- Bottom visibility docker -->
+
+            <div>
+                <div id="displaydiv">
+                        <input type="hidden" id="timezoneOffset" name="timezoneOffset">
+                        <table id="displaytable">
+                            <tr>
+                                <td align="center">
+                                    @for(i <- 0 to abbreviations.size-1){
+                                        <span title="@keysToParse.get(i + 1)" class="@abbreviations.get(i)_@i"><input type="checkbox" id="@i" checked onclick="change(this)">@abbreviations.get(i)</span>
+                                    }
+                                </td>
+                            </tr>
+                        </table>
+                </div>
+            </div>
+        </div>
+</html>

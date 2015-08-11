@@ -1,0 +1,343 @@
+#graphdiv { position: absolute; left: 20px; right: 25px; top: 25px; bottom: 60px; }
+
+#graphdiv .dygraph-title { font-size: 36px;}
+
+#graphdiv .dygraph-xlabel { font-size: 36px; }
+
+#graphdiv .dygraph-ylabel { font-size: 18px; }
+
+#inputdiv { font-size: 18px; }
+
+#headertable {
+	position: absolute;
+	width:100%;
+	height: 26px;
+	top: -3px;
+
+	background-image: url("/assets/images/topdocker.svg.png");
+	background-repeat: no-repeat;
+	background-attachment: relative;
+	background-position: top;
+	background-size: contain + 5px;
+}
+
+#headertable {
+	white-space: nowrap;
+	font-size: 18px;
+	align : center;
+	color: #FFFFFF;
+}
+
+#displaytable {
+	position: absolute;
+    width:100%;
+	height: 26px;
+	bottom: 0;
+
+
+	background-image: url("/assets/images/bottomdocker.svg.png");
+	background-repeat: no-repeat;
+	background-attachment: relative;
+	background-position: bottom;
+	background-size: contain - 10px;
+	/*background-size: 2%;*/
+}
+
+#displaytable td {
+    white-space: nowrap;
+    font-size: 18px;
+    align : center;
+	/*position: absolute;
+	bottom: 10px;*/
+}
+
+.myButton {
+	-moz-box-shadow:inset 0px 1px 0px 0px #ffffff;
+	-webkit-box-shadow:inset 0px 1px 0px 0px #ffffff;
+	box-shadow:inset 0px 1px 0px 0px #ffffff;
+	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #f9f9f9), color-stop(1, #e9e9e9));
+	background:-moz-linear-gradient(top, #f9f9f9 5%, #e9e9e9 100%);
+	background:-webkit-linear-gradient(top, #f9f9f9 5%, #e9e9e9 100%);
+	background:-o-linear-gradient(top, #f9f9f9 5%, #e9e9e9 100%);
+	background:-ms-linear-gradient(top, #f9f9f9 5%, #e9e9e9 100%);
+	background:linear-gradient(to bottom, #f9f9f9 5%, #e9e9e9 100%);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#f9f9f9', endColorstr='#e9e9e9',GradientType=0);
+	background-color:#f9f9f9;
+	-moz-border-radius:6px;
+	-webkit-border-radius:6px;
+	border-radius:6px;
+	border:1px solid #dcdcdc;
+	display:inline-block;
+	cursor:pointer;
+	color:#666666;
+	/*font-family:Arial;*/
+	font-size:15px;
+	font-weight:bold;
+	padding:6px 24px;
+	text-decoration:none;
+	text-shadow:0px 1px 0px #ffffff;
+}
+.myButton:hover {
+	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #e9e9e9), color-stop(1, #f9f9f9));
+	background:-moz-linear-gradient(top, #e9e9e9 5%, #f9f9f9 100%);
+	background:-webkit-linear-gradient(top, #e9e9e9 5%, #f9f9f9 100%);
+	background:-o-linear-gradient(top, #e9e9e9 5%, #f9f9f9 100%);
+	background:-ms-linear-gradient(top, #e9e9e9 5%, #f9f9f9 100%);
+	background:linear-gradient(to bottom, #e9e9e9 5%, #f9f9f9 100%);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#e9e9e9', endColorstr='#f9f9f9',GradientType=0);
+	background-color:#e9e9e9;
+}
+.myButton:active {
+	position:relative;
+	top:1px;
+}
+
+.select-style {
+    border: 1px solid #ccc;
+    width: 160px;
+	height: 20px;
+    border-radius: 5px;
+    overflow: hidden;
+    background: #fafafa no-repeat 90% 50%;
+}
+
+.select-style select {
+    padding: 5px 8px;
+    width: 130%;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    background-image: none;
+    -webkit-appearance: none;
+}
+
+.select-style option {
+	border-radius: 5px;
+}
+
+.select-style select:focus {
+    outline: none;
+}
+
+.settingsdiv input {
+    border-radius: 5px;
+	height: 20px;
+	width: 160px;
+}
+
+span {
+	padding : 10px;
+}
+
+#aggrtable td {
+	color: #FFFFFF;
+	white-space: nowrap;
+	font-size: 14px;
+	/*align : center;*/
+}
+
+body {
+	/*font-weight: bold;*/
+	font-family: Ascender Serif Bold;
+	line-height: 1.5;
+	color: #555;
+    /* Without this, the body has excess horizontal scroll when the menu is open */
+    overflow-x: hidden;
+	overflow-y: hidden;
+}
+
+/*----------------------------------------------*/
+
+.settingsdiv {
+	/* critical sizing and position styles */
+	width: 100%;
+	height: 100%;
+	position: fixed;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	z-index: 0;
+	overflow-y: scroll;
+
+	/* non-critical appearance styles */
+	list-style: none;
+	background: #C9C9C9;
+	text-decoration-color: #555555;
+}
+
+.settingsdiv table {
+	border-top-color: #555555;
+	padding-top: 20px;
+	width: 310px;
+	padding-bottom: 20px;
+}
+
+#updatetable td {
+	white-space: nowrap;
+	font-size: 18px;
+	align : center;
+}
+
+#aggregateresults {
+	/*font-weight: bold;*/
+	font-size: 18px;
+}
+
+#aggregateresults tr td:nth-child(even) {
+	text-align: right;
+}
+
+/*.settings {
+	margin: auto;
+	width: 60%;
+}*/
+
+/* Navigation Menu - List items */
+/*.nav-item {
+	width: 200px;
+	display: block;
+	transition: color 0.2s, background 0.5s;
+}*/
+
+/* Site Wrapper - Everything that isn't navigation */
+.site-wrap {
+	/* Critical position and size styles */
+	min-height: 100%;
+	min-width: 100%;
+	background-color: #e9e9e9; /* Needs a background or else the nav will show through */
+	position: relative;
+	top: 0;
+	bottom: 100%;
+	left: 0;
+	z-index: 1;
+}
+
+/* Nav Trigger */
+.nav-trigger {
+	/* critical styles - hide the checkbox input */
+	position: absolute;
+	clip: rect(0, 0, 0, 0);
+}
+
+label[for="nav-trigger"] {
+	/* critical positioning styles */
+	position: fixed;
+	left: 0px;
+	top: 43%;
+	z-index: 2;
+
+	/* non-critical apperance styles */
+	height: 100px;
+	width: 30px;
+	cursor: pointer;
+	background-image: url("/assets/images/menutoggle.svg.png");
+	/*opacity: 0.1;*/
+	background-size: contain;
+	background-repeat: no-repeat;
+}
+
+/* Make the Magic Happen */
+.nav-trigger + label, .site-wrap {
+	transition: left 0.2s;
+}
+
+.nav-trigger:checked + label {
+	left: 315px;
+}
+
+.nav-trigger:checked ~ .site-wrap {
+	left: 315px;
+	box-shadow: 0 0 5px 5px rgba(0,0,0,0.5);
+}
+
+/* Micro reset */
+*,*:before,*:after{-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box;margin:0;padding:0;}
+html, body { height: 100%; width: 100%; /*font-family: Helvetica, Arial, sans-serif;*/ }
+
+
+/*.settingsdiv table td {
+	align-items: center;
+}*/
+
+#right {
+	text-align: center;
+}
+
+.center td {
+	width: 310px;
+	text-align: center;
+}
+
+.bottom {
+}
+
+hr {
+
+}
+
+/*h1 {*/
+	/*text-decoration: overline;*/
+/*}*/
+
+/*---text coloring---*/
+.MPU_0 {
+	color: #803000;
+}
+
+.OMPU_1 {
+	color: #005080;
+}
+
+
+.PPU_2 {
+	color: #806000;
+}
+
+.AVCPU_3 {
+	color: #2E4897;
+}
+
+.HUVCPU_4 {
+	color: #708000;
+}
+
+.CPU_5 {
+	color: #25178B;
+}
+
+.PPU_6 {
+	color: #408000;
+}
+
+.RPU_7 {
+	color: #420381;
+}
+
+.DPU_8 {
+	color: #108000;
+}
+
+.VAPU_9 {
+	color: #791188;
+}
+
+.AAPU_10 {
+	color: #008020;
+}
+
+.PAPU_11 {
+	color: #800060;
+}
+
+.OAPU_12 {
+	color: #058253;
+}
+
+.CPU_13 {
+	color: #800030;
+}
+
+.UC_14 {
+	color: #008080;
+}

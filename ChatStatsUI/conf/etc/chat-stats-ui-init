@@ -1,0 +1,70 @@
+#!/bin/sh
+#
+# Starts/stop the Tigase statistics GUI
+#
+# chkconfig:   345 95 5
+# description: Runs Tigase statistics GUI
+
+### BEGIN INIT INFO
+### END INIT INFO
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+#. /home/applications/chat_prod/Tigase-5.2.0-b89/chatstatsui-1.0-SNAPSHOT/variables.conf
+. ../../variables.conf
+
+lockfile=${homedir}
+
+start() {
+    #[ -x $exec ] || exit 5
+    echo -n $"Starting $prog: "
+    daemon $exec $OPTS > ${homedir}/chatstats.log &
+    echo check ${homedir}/chatstats.log for the output
+    retval=$?
+    echo
+    [ $retval -eq 0 ] && touch $lockfile
+}
+
+stop() {
+    echo -n $"Stopping $prog: "
+    if [ -f ${homedir}/RUNNING_PID ] ; then
+        killproc=`cat ${homedir}/RUNNING_PID`
+        kill $killproc
+        echo killed ${killproc}
+#        rm -f ${homedir}/RUNNING_PID
+    else
+        failure $"Stopping $prog"
+    fi
+    retval=$?
+    echo
+    [ $retval -eq 0 ] && rm -f ${homedir}/RUNNING_PID
+}
+restart() {
+    stop
+    start
+}
+rh_status() {
+    # run checks to determine if the service is running or use generic status
+    status $prog
+}
+
+rh_status_q() {
+    rh_status >/dev/null 2>&1
+}
+
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        restart
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|restart}"
+        exit 2
+esac
+exit $?

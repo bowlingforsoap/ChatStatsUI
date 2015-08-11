@@ -10,3 +10,16 @@
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
+#ChatStatsUI
+/ChatStatsUI/logs
+/ChatStatsUI/target
+/ChatStatsUI/project/project
+/ChatStatsUI/project/target
+/ChatStatsUI/resources/*
+/ChatStatsUI/.idea
+/ChatStatsUI/.idea_modules
+/ChatStatsUI/.classpath
+/ChatStatsUI/.project
+/ChatStatsUI/.settings
+/ChatStatsUI/RUNNING_PID
