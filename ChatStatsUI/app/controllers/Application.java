@@ -4,16 +4,13 @@ import com.mongodb.client.FindIterable;
 import controllers.util.Utils;
 import models.DataFetcher;
 import org.bson.Document;
-import play.Play;
 import play.data.DynamicForm;
 import play.data.Form;
 import play.mvc.Controller;
 import play.mvc.Result;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 public class Application extends Controller {
     public static final long HOUR = 60 * 60 * 1000;
