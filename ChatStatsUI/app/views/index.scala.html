@@ -1,4 +1,4 @@
-@(appsFromDB: List[String], timeLengths: List[String], keysToParse: List[String], aggrResults: List[Long], session: play.mvc.Http.Session, abbreviations : List[String], statsCollectionPeriod : Int)
+@(appsFromDB: java.util.List[java.lang.String], timeLengths: java.util.List[java.lang.String], keysToParse: java.util.List[java.lang.String], aggrResults: java.util.List[java.lang.Long], session: play.mvc.Http.Session, abbreviations : java.util.List[java.lang.String], statsCollectionPeriod : java.lang.Integer)
 
 <!DOCTYPE html>
 
@@ -43,14 +43,14 @@
                     <table class="center"><tr class="bottom"><td><button type="submit" class="myButton">UPDATE</button></td></tr></table>
                 </form>
                 <table class="center">
-                @if(aggrResults != null && aggrResults.length > 0){
+                @if(aggrResults != null && aggrResults.size() > 0){
                     <hr>
                     <tr class="top"><td><h1>AGGR. RESULTS</h1></td></tr>
                 }
 
                 <!-- Aggegated results -->
                 </table>
-                @if(aggrResults != null && aggrResults.length > 0){
+                @if(aggrResults != null && aggrResults.size() > 0){
                     <hr>
                 <table id="aggregateresults" class="settings">
                     @for(i <- 0 to aggrResults.size-1){
@@ -135,18 +135,19 @@
                   //saves settings from the previous update and cleans the session
                   function setData() {
                     document.getElementById('appId').value = '@session.get("appId")'
-                    @if(session.get("timeLength") == null || session.get("timeLength").length == 0) {
+                    /*@if(session.get("timeLength") == null || session.get("timeLength").length == 0) {
                         //aka: if null -> 'day'
                         document.getElementById('timeLength').value = '@timeLengths.get(1)'} else {
-                        document.getElementById('timeLength').value = '@session.get("timeLength")'  }
-                        document.getElementById('timeLengthValue').value = '@session.get("timeLengthValue")'
-                        document.getElementById("timezoneOffset").value = new Date().getTimezoneOffset();
-                        aggregateResults = '@session.get("aggregateResults")';
-                        if (aggregateResults != '') {
-                            document.getElementById("aggregateResults").checked = true;
-                        }
+                        document.getElementById('timeLength').value = '@session.get("timeLength")'
+                    }*/
+                    document.getElementById('timeLengthValue').value = '@session.get("timeLengthValue")'
+                    document.getElementById("timezoneOffset").value = new Date().getTimezoneOffset();
+                    aggregateResults = '@session.get("aggregateResults")';
+                    if (aggregateResults != '') {
+                        document.getElementById("aggregateResults").checked = true;
+                    }
 
-                        '@session.remove("aggregateResults")'
+                    '@session.remove("aggregateResults")'
                   }
             </script>
 
@@ -169,4 +170,5 @@
                 </div>
             </div>
         </div>
+    </body>
 </html>

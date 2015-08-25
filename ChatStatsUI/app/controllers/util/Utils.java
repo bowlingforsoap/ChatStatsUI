@@ -23,7 +23,6 @@ public class Utils {
      * Format expected in dygraphs js.
      */
     public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-    public static final String STATS_PERIOD_SEC_KEY = "stats_period_sec";
     public static final Integer STATS_PERIOD_SEC; //default
     public static final String CHAT_HOME;
     static {
@@ -62,11 +61,11 @@ public class Utils {
         } catch (IOException e) {
             System.out.println("Utils.static initializer : IOException while initializing critical constants");
             e.printStackTrace(System.out);
-            System.out.println("Application continues to run with defaults");
+            System.out.println("Application continues to run on defaults");
         } catch (NullPointerException e) {
             System.out.println("Utils.static initializer : NullPointerException while initializing critical constants");
             e.printStackTrace(System.out);
-            System.out.println("Application continues to run with defaults");
+            System.out.println("Application continues to run on defaults");
         } finally {
             if (initProperties != null) {
                 try {
@@ -86,7 +85,7 @@ public class Utils {
         } catch (NullPointerException e) {
             System.out.println("Utils.static initializer : NullPointerException while parsing metrics");
             e.printStackTrace(System.out);
-            System.out.println("Application continues to run with defaults");
+            System.out.println("Application continues to run on defaults");
         }
         keysToParse.add("connectionPerUnit");
         keysToParse.add("uniqueConnections");
@@ -227,7 +226,7 @@ public class Utils {
 
         //fill the results list 0s
         for (int i = 0; i < ABBR_METRICS.length; i++) {
-            aggregationResults.add(new Long(0));
+            aggregationResults.add((long) 0);
         }
         //fill it with actual data
         while (appStatsIterator.hasNext()) {

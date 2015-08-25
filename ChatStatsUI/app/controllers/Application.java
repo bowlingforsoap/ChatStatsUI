@@ -23,7 +23,7 @@ public class Application extends Controller {
      * @return
      * @throws Exception
      */
-    public Result index() throws Exception {
+    public static Result index() throws Exception {
         String sessionId = Utils.getSessionId(session());
         String appId = session("appId");
         String timeLength = session("timeLength");
@@ -79,7 +79,7 @@ public class Application extends Controller {
      * @return
      * @throws Exception
      */
-    public Result updateSettings() throws Exception {
+    public static Result updateSettings() throws Exception {
         //get the form
         DynamicForm dForm = Form.form().bindFromRequest();
         //retrieve the data
@@ -110,7 +110,7 @@ public class Application extends Controller {
      * @param file file name
      * @return the resource
      */
-    public Result getResource(String file) {
+    public static Result getResource(String file) {
         return ok(play.Play.application().getFile(Utils.DEFAULT_RESOURCE_FOLDER + file));
     }
 }

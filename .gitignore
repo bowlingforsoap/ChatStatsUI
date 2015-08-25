@@ -13,6 +13,9 @@ hs_err_pid*
 #ChatStatsUI
 /ChatStatsUI/logs
 /ChatStatsUI/target
+/ChatStatsUI/build
+/ChatStatsUI/app-2.11
+/ChatStatsUI/test-2.11
 /ChatStatsUI/project/project
 /ChatStatsUI/project/target
 /ChatStatsUI/resources/*

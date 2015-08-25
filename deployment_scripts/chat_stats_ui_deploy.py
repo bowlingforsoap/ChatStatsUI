@@ -27,48 +27,51 @@ class ChatStatsUIDeployApp:
 
         print(green("\nHosts: " + str(env.hosts) + "\n"))
 
-        app_name_version = str.lower(app_name) + "-" + version
+        app_dir = "chat-stats-ui"
         # path to the ChatStatsUI app
 
-        tasks.execute(self.deploy, server_path, app_name_version)
+        tasks.execute(self.deploy, server_path, app_dir)
 
         env.hosts = []
         disconnect_all()
 
-    def deploy(self, server_path, app_name_version):
+    def deploy(self, server_path, app_dir):
         with lcd("../ChatStatsUI"):
-            # sanity check
-            local("rm -rf target/universal")
-            # distribute ChatStatsUI in prod mode
-            local("chmod 777 activator")
-            local("./activator dist -java-home /usr/lib/jvm/java-1.8.0-openjdk.x86_64")
+            local("gradle dist")
 
         # rm old target dir
         with cd(server_path["app_path"]):
-            with cd(app_name_version + "/conf/etc"):
-                run("chmod 777 " + app_name_version + "chat-stats-ui-init", warn_only=True)
+            #POTENTIALLY REDUNDANT PART
+            with cd(app_dir + "/conf/etc"):
+                run("chmod 777 " + app_dir + "chat-stats-ui-init", warn_only=True)
                 run("bash chat-stats-ui-init stop", warn_only=True, pty=False)
-            run("rm -rf " + app_name_version, warn_only=True)
+            run("rm -rf " + app_dir, warn_only=True)
         # put all required files into chat_stats_ui_path
-        put("../ChatStatsUI/target/universal/" + app_name_version + ".zip", server_path["app_path"])
+        put("../ChatStatsUI/build/distributions/playBinary.zip" + app_dir + ".zip", server_path["app_path"])
         with cd(server_path["app_path"]):
             # run app
-            run("unzip -o " + app_name_version)
+            run("unzip -o " + app_dir)
             # remove the archive
-            run("rm -f " + app_name_version + ".zip")
+            run("rm -f playBinary.zip")
+            run("mv playBinary " + app_dir)
 
-            with cd(app_name_version):
-                run("touch variables.conf")
-                files.append("variables.conf", "homedir=\"" + server_path["app_path"] + "/" + app_name_version + "\"")
-                files.append("variables.conf", "exec=\"${homedir}/bin/" + str.lower(app_name) + "\"")
-                files.append("variables.conf", "prog=\"" + app_name + "\"")
-                files.append("variables.conf", "OPTS=\"-java-home " + server_java_home +  "\"")
+            with cd(app_dir):
+                # run("touch variables.conf")
+                # files.append("variables.conf", "homedir=\"" + server_path["app_path"] + "/" + app_dir + "\"")
+                # files.append("variables.conf", "exec=\"${homedir}/bin/" + str.lower(app_name) + "\"")
+                # files.append("variables.conf", "prog=\"" + app_name + "\"")
+                # files.append("variables.conf", "OPTS=\"-java-home " + server_java_home +  "\"")
+                run("homedir=" + server_path["app_path"] + "/" + app_dir)
+                run("exec=${homedir}/bin/" + str.lower(app_name))
+                run("prog=" + app_name)
+                run("JAVA_HOME" + server_java_home)
+                run("app_dir=chat-stats-ui")
 
                 with cd("conf"):
                     # set chat_home in conf/application.conf
                     files.append("application.conf", "chat_home=\"" + server_path["app_path"] + "\"")
                     # in case "resources" dir is absent
-                    run("mkdir resources")
+                    run("mkdir resources", warn_only=True)
 
                 # with cd("bin"):
                 #     print("Starting application in new screen: 'play'")
@@ -85,13 +88,13 @@ if __name__ == "__main__":
     # chat_host = "stage1"
     print "chat_host: " + chat_host
 
-    app_name = os.environ["app_name"]
-    # app_name = "ChatStatsUI"
-    print "app_name: " + app_name
+    # app_name = os.environ["app_name"]
+    # # app_name = "ChatStatsUI"
+    # print "app_name: " + app_name
 
-    version = os.environ["version"]
-    # version = "1.0-SNAPSHOT"
-    print "version: " + version
+    # version = os.environ["version"]
+    # # version = "1.0-SNAPSHOT"
+    # print "version: " + version
 
     server_java_home = os.environ["server_java_home"]
     # server_java_home = "/usr/lib/jvm/jre-1.8.0-openjdk.x86_64"

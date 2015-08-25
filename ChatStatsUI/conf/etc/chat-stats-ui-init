@@ -18,7 +18,7 @@ lockfile=${homedir}
 start() {
     #[ -x $exec ] || exit 5
     echo -n $"Starting $prog: "
-    daemon $exec $OPTS > ${homedir}/chatstats.log &
+    daemon $exec > ${homedir}/chatstats.log &
     echo check ${homedir}/chatstats.log for the output
     retval=$?
     echo
@@ -42,14 +42,6 @@ stop() {
 restart() {
     stop
     start
-}
-rh_status() {
-    # run checks to determine if the service is running or use generic status
-    status $prog
-}
-
-rh_status_q() {
-    rh_status >/dev/null 2>&1
 }
 
 
