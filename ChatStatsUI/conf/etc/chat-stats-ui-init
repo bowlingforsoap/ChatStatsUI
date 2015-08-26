@@ -10,10 +10,13 @@
 
 # Source function library.
 . /etc/rc.d/init.d/functions
+# Additional variables
+. ../../variables.conf
 
 lockfile=${homedir}
 
 start() {
+    echo $JAVA_HOME
     #[ -x $exec ] || exit 5
     echo -n $"Starting $prog: "
     daemon $exec > ${homedir}/app_dir/chatstats.log &
