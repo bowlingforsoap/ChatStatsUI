@@ -37,6 +37,9 @@ class ChatStatsUIDeployApp:
 
     def deploy(self, server_path, app_dir):
         with lcd("../ChatStatsUI"):
+            f = open("conf/application.conf", "a")
+            f.write("chat_home=\"" + server_path["app_path"] + "\"")
+            f.close()
             local("gradle dist")
 
         # rm old target dir
