@@ -66,6 +66,11 @@ class ChatStatsUIDeployApp:
                 run("JAVA_HOME=" + server_java_home)
                 run("app_dir=chat-stats-ui")
 
+                run("echo $homedir")
+                run("echo $exec")
+                run("echo $JAVA_HOME")
+                run("echo $app_dir")
+
                 with cd("conf"):
                     # set chat_home in conf/application.conf
                     files.append("application.conf", "chat_home=\"" + server_path["app_path"] + "\"")
