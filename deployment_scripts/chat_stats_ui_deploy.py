@@ -50,7 +50,7 @@ class ChatStatsUIDeployApp:
         put("../ChatStatsUI/build/distributions/playBinary.zip", server_path["app_path"])
         with cd(server_path["app_path"]):
             # run app
-            run("unzip -o " + app_dir)
+            run("unzip playBinary")
             # remove the archive
             run("rm -f playBinary.zip")
             run("mv playBinary " + app_dir)
