@@ -60,7 +60,7 @@ class ChatStatsUIDeployApp:
                 files.append("variables.conf", "homedir=\"" + server_path["app_path"] + "/" + app_dir + "\"")
                 # files.append("variables.conf", "exec=\"${homedir}/bin/playBinary\"")
                 files.append("variables.conf", "JAVA_HOME=\"" + server_java_home + "\"")
-                # files.append("variables.conf", "app_dir=\"chat-stats-ui\"")
+                files.append("variables.conf", "app_dir=\"chat-stats-ui\"")
 
                 with cd("conf"):
                     # set chat_home in conf/application.conf

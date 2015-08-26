@@ -18,12 +18,12 @@ lockfile=${homedir}
 start() {
     echo $JAVA_HOME
     #[ -x $exec ] || exit 5
-    echo -n $"Starting $prog: "
-    daemon $exec > ${homedir}/app_dir/chatstats.log &
-    echo check ${homedir}/app_dir/chatstats.log for the output
+    echo -n $"Starting: "
+    daemon $exec > ${homedir}/${app_dir}/chatstats.log &
+    echo check ${homedir}/${app_dir}/chatstats.log for the output
     retval=$?
-    echo
-    [ $retval -eq 0 ] && touch $lockfile
+    # echo
+    # [ $retval -eq 0 ] && touch $lockfile
 }
 
 stop() {
