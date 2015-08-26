@@ -47,7 +47,7 @@ class ChatStatsUIDeployApp:
                 run("bash chat-stats-ui-init stop", warn_only=True, pty=False)
             run("rm -rf " + app_dir, warn_only=True)
         # put all required files into chat_stats_ui_path
-        put("../ChatStatsUI/build/distributions/playBinary.zip" + app_dir + ".zip", server_path["app_path"])
+        put("../ChatStatsUI/build/distributions/playBinary.zip", server_path["app_path"])
         with cd(server_path["app_path"]):
             # run app
             run("unzip -o " + app_dir)
