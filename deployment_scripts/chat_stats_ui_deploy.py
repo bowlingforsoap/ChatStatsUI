@@ -62,8 +62,7 @@ class ChatStatsUIDeployApp:
                 # files.append("variables.conf", "prog=\"" + app_name + "\"")
                 # files.append("variables.conf", "OPTS=\"-java-home " + server_java_home +  "\"")
                 run("homedir=" + server_path["app_path"] + "/" + app_dir)
-                run("exec=${homedir}/bin/" + str.lower(app_name))
-                run("prog=" + app_name)
+                run("exec=${homedir}/bin/playBinary")
                 run("JAVA_HOME" + server_java_home)
                 run("app_dir=chat-stats-ui")
 
