@@ -71,9 +71,9 @@ class ChatStatsUIDeployApp:
                 #     print("Starting application in new screen: 'play'")
                 #     run("screen -S play -d -m ./" + str.lower(app_name) + " -java-home " + server_java_home, pty=False)
                 #     print("Use 'screen -ls' to check all the screens on the server")
-                    with cd("etc"):
-                        run("chmod 777 chat-stats-ui-init")
-                        run("bash chat-stats-ui-init start", pty=False)
+                    # with cd("etc"):
+                run("chmod 777 conf/etc/chat-stats-ui-init")
+                run("bash conf/etc/chat-stats-ui-init start", pty=False)
 
 
 if __name__ == "__main__":
