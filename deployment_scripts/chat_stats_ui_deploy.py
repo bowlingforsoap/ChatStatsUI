@@ -37,18 +37,16 @@ class ChatStatsUIDeployApp:
 
     def deploy(self, server_path, app_dir):
         with lcd("../ChatStatsUI"):
-            current_dir = os.path.dirname(__file__)
-            println(current_dir)
-            f = open(os.path.join(current_dir, "/conf/application.conf"), "a")
-            f.write("chat_home=\"" + server_path["app_path"] + "\"")
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            f = open(os.path.join(current_dir, "../ChatStatsUI/conf/application.conf"), "a")
+            f.write("\nchat_home=\"" + server_path["app_path"] + "\"\n")
             f.close()
             local("gradle dist")
 
         # rm old target dir
         with cd(server_path["app_path"]):
-            #POTENTIALLY REDUNDANT PART
             with cd(app_dir + "/conf/etc"):
-                run("chmod 777 " + app_dir + "chat-stats-ui-init", warn_only=True)
+                run("chmod 777 chat-stats-ui-init", warn_only=True)
                 run("bash chat-stats-ui-init stop", warn_only=True, pty=False)
             run("rm -rf " + app_dir, warn_only=True)
         # put all required files into chat_stats_ui_path
@@ -67,16 +65,9 @@ class ChatStatsUIDeployApp:
                 files.append("variables.conf", "JAVA_HOME=\"" + server_java_home + "\"")
 
                 with cd("conf"):
-                    # set chat_home in conf/application.conf
-                    files.append("application.conf", "chat_home=\"" + server_path["app_path"] + "\"")
                     # in case "resources" dir is absent
                     run("mkdir resources", warn_only=True)
 
-                # with cd("bin"):
-                #     print("Starting application in new screen: 'play'")
-                #     run("screen -S play -d -m ./" + str.lower(app_name) + " -java-home " + server_java_home, pty=False)
-                #     print("Use 'screen -ls' to check all the screens on the server")
-                    # with cd("etc"):
                 run("chmod 777 conf/etc/chat-stats-ui-init")
                 run("bash conf/etc/chat-stats-ui-init start", pty=False)
 
@@ -84,21 +75,14 @@ class ChatStatsUIDeployApp:
 if __name__ == "__main__":
 
     chat_host = os.environ["chat_host"]
-    # chat_host = "stage1"
+#    chat_host = "stage3"
     print "chat_host: " + chat_host
 
-    # app_name = os.environ["app_name"]
-    # # app_name = "ChatStatsUI"
-    # print "app_name: " + app_name
-
-    # version = os.environ["version"]
-    # # version = "1.0-SNAPSHOT"
-    # print "version: " + version
-
     server_java_home = os.environ["server_java_home"]
-    # server_java_home = "/usr/lib/jvm/jre-1.8.0-openjdk.x86_64"
+#    server_java_home = "/usr/lib/jvm/jre-1.8.0-openjdk.x86_64"
     print "server_java_home: " + server_java_home
 
     app = ChatStatsUIDeployApp()
     app.run_deployment()
+
 
