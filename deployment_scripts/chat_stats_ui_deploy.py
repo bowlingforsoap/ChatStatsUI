@@ -56,20 +56,11 @@ class ChatStatsUIDeployApp:
             run("mv playBinary " + app_dir)
 
             with cd(app_dir):
-                # run("touch variables.conf")
+                run("touch variables.conf")
                 # files.append("variables.conf", "homedir=\"" + server_path["app_path"] + "/" + app_dir + "\"")
-                # files.append("variables.conf", "exec=\"${homedir}/bin/" + str.lower(app_name) + "\"")
-                # files.append("variables.conf", "prog=\"" + app_name + "\"")
-                # files.append("variables.conf", "OPTS=\"-java-home " + server_java_home +  "\"")
-                run("homedir=" + server_path["app_path"] + "/" + app_dir)
-                run("exec=${homedir}/bin/playBinary")
-                run("JAVA_HOME=" + server_java_home)
-                run("app_dir=chat-stats-ui")
-
-                run("echo $homedir")
-                run("echo $exec")
-                run("echo $JAVA_HOME")
-                run("echo $app_dir")
+                # files.append("variables.conf", "exec=\"${homedir}/bin/playBinary\"")
+                files.append("variables.conf", "JAVA_HOME=\"" + server_java_home + "\"")
+                # files.append("variables.conf", "app_dir=\"chat-stats-ui\"")
 
                 with cd("conf"):
                     # set chat_home in conf/application.conf
