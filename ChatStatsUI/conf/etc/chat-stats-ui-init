@@ -19,8 +19,8 @@ start() {
     echo $JAVA_HOME
     #[ -x $exec ] || exit 5
     echo -n $"Starting: "
-    daemon $exec > ${homedir}/${app_dir}/chatstats.log &
-    echo check ${homedir}/${app_dir}/chatstats.log for the output
+    daemon $exec > ${homedir}/chatstats.log &
+    echo check ${homedir}/chatstats.log for the output
     retval=$?
     # echo
     # [ $retval -eq 0 ] && touch $lockfile
