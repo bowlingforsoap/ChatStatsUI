@@ -11,7 +11,7 @@
 # Source function library.
 . /etc/rc.d/init.d/functions
 # Additional variables
-. ../../variables.conf
+. ./variables.conf
 
 lockfile=${homedir}
 
