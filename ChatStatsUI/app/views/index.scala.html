@@ -124,13 +124,48 @@
                         xlabel: 'Created at',
                         ylabel: 'Value',
                         visibility : visibilityList
+//                        connectSeparatedPoints: true
                         //stackedGraph : true
                     }
                   );
+
                   //alter graph on checkbox change
                   function change(el) {
                     g.setVisibility(parseInt(el.id), el.checked)
                   }
+
+                  //executed when graph is ready (loaded)
+                  g.ready(function() {
+                    var abbreviationsArray = "@abbreviations";
+                    var plotColors = g.getColors();
+
+                    abbreviationsArray = abbreviationsArray.replace('[','');
+                    abbreviationsArray = abbreviationsArray.replace(']','');
+                    abbreviationsArray = abbreviationsArray.split(',');
+                    for (i = 0; i < abbreviationsArray.length; i++) {
+                        abbreviationsArray[i] = abbreviationsArray[i].trim();
+                    }
+
+                    console.log("g.getLabels() : " + g.getLabels());
+                    console.log("labelsList : " + labelsList);
+                    console.log("abbreviationsArray : " + abbreviationsArray);
+                    console.log("g.getColors() : " + plotColors);
+                    for (var j = 0; j < abbreviationsArray.length; j++) {
+                        console.log(abbreviationsArray[j]);
+
+                        var elements = document.getElementsByClassName(abbreviationsArray[j] + "_" + j);
+                        console.log(elements);
+                        console.log(elements);
+
+                        for (var i = 0; i < elements.length; i++){
+                            console.log(plotColors[j]);
+                            try {
+                                elements[i].style.color = plotColors[j];
+                            } catch (err) {}
+                        }
+                    }
+                    //TODO: set colors
+                  })
 
                   //saves settings from the previous update and cleans the session
                   function setData() {

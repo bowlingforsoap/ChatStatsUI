@@ -32,9 +32,6 @@ public class DataFetcher {
      */
     public static final String DEFAULT_STATS_COLL = "chat_statistics_per_unit";
 
-    public static final String DB_URI_KEY = "mongodb_uri";
-    public static final String COLL_KEY = "collection";
-
     private static DataFetcher instance = new DataFetcher();
 
     private MongoClient client;
@@ -143,7 +140,7 @@ public class DataFetcher {
                     doc.put("app_id", app);
                     for (int i1 = 1; i1 < Utils.KEYS_TO_PARSE.length; i1++) {
                         String key = Utils.KEYS_TO_PARSE[i1];
-                        if (key.equals("connectionPerUnit") || key.equals("uniqueConnections")) {
+                        if (key.equals(Utils.CONNECTIONS_METRIC) || key.equals(Utils.UNIQUE_CONNECTIONS_METRIC)) {
                             doc.put(key, new Long(randGenerator.nextInt(1000)));
                         } else {
                             doc.put(key, randGenerator.nextDouble() * 10000);

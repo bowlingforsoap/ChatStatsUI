@@ -22,7 +22,7 @@ public class Utils {
     /**
      * Format expected in dygraphs js.
      */
-    public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+    public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss:SS");
     public static final Integer STATS_PERIOD_SEC; //default
     public static final String CHAT_HOME;
     static {
@@ -31,11 +31,14 @@ public class Utils {
     /**
      * Fields from db to work with. The first one will become the X-axis.
      */
-    public static final String[] KEYS_TO_PARSE/*= { "created_at", "messagePerUnit", "presencePerUnit", "acceptVideoCallPerUnit", "connectionPerUnit", "uniqueConnections" }*/;
+    public static final String[] KEYS_TO_PARSE;
     /**
      * Statistics db.
      */
     public static final String CHAT_STATS_DB_URI;
+
+    public static final String CONNECTIONS_METRIC = "connections";
+    public static final String UNIQUE_CONNECTIONS_METRIC = "uniqueConnections";
 
     //Set all the static constants.
     static {
@@ -48,6 +51,7 @@ public class Utils {
 
         keysToParse.add("created_at");
         try {
+
             initProperties = new FileInputStream(CHAT_HOME + "/etc/init.properties");
             props.load(initProperties);
 
@@ -76,6 +80,7 @@ public class Utils {
                 }
             }
         }
+
         //set KEYS_TO_PARSE
         try {
             for (int i = 0; i < statisticsMetrics.length; i++) {
@@ -87,8 +92,8 @@ public class Utils {
             e.printStackTrace(System.out);
             System.out.println("Application continues to run on defaults");
         }
-        keysToParse.add("connectionPerUnit");
-        keysToParse.add("uniqueConnections");
+        keysToParse.add(CONNECTIONS_METRIC);
+        keysToParse.add(UNIQUE_CONNECTIONS_METRIC);
         KEYS_TO_PARSE = keysToParse.toArray(new String[0]);
 
         //set STATS_PERIOD_SEC
@@ -99,7 +104,7 @@ public class Utils {
     }
 
     /**
-     * First letters from metric name in init.properties (plus "connectionPerUnit" and "uniqueConnections")
+     * First letters from metric name in init.properties (plus "connections" and "uniqueConnections")
      */
     public static final String[] ABBR_METRICS = new String[KEYS_TO_PARSE.length - 1];
     static {
@@ -235,7 +240,7 @@ public class Utils {
                 String key = KEYS_TO_PARSE[i + 1];
                 Object metric = entry.get(key);
                 if (metric != null) {
-                    if (key.equals("connectionPerUnit") || key.equals("uniqueConnections")) {
+                    if (key.equals(CONNECTIONS_METRIC) || key.equals(UNIQUE_CONNECTIONS_METRIC)) {
                         temp = ((Number) metric).longValue();
                         if (temp > aggregationResults.get(i)) {
                             aggregationResults.set(i, temp);
