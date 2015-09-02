@@ -17,8 +17,6 @@ import java.util.*;
  * Created by Strelchenko Vadym on 29.05.15.
  */
 public class Utils {
-    public static final String DEFAULT_RESOURCE_FOLDER = "conf/resources/";
-    public static final String DEFAULT_STATS_CSV_FILE = "dataset";
     /**
      * Format expected in dygraphs js.
      */
@@ -143,6 +141,7 @@ public class Utils {
             sessionId = UUID.randomUUID().toString();
             session.put("id", sessionId);
         }
+
         return sessionId;
     }
 

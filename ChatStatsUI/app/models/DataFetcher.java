@@ -4,6 +4,8 @@ package models;
  * Created by Strelchenko Vadym on 28.05.15.
  */
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.mongodb.BasicDBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
@@ -17,6 +19,7 @@ import controllers.utils.Utils;
 import org.bson.Document;
 import play.Logger;
 import play.inject.ApplicationLifecycle;
+import play.libs.F;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -26,6 +29,7 @@ import java.util.List;
 /**
  * Performs operations with data in MongoDB and manages MongoClient connection.
  */
+@Singleton
 public class DataFetcher {
     public static final String DEFAULT_STATS_HOST = "localhost";
     public static final String DEFAULT_STATS_DB = "admin_chat";
@@ -34,16 +38,14 @@ public class DataFetcher {
      */
     public static final String DEFAULT_STATS_COLL = "chat_statistics_per_unit";
 
-    private static DataFetcher instance = new DataFetcher();
-
     private MongoClient client;
-
     /**
      * DB to work with.
      */
     private String db;
 
-    private DataFetcher() {
+    @Inject
+    public DataFetcher(ApplicationLifecycle lifecycle) {
         try {
             String dbUriValue = Utils.CHAT_STATS_DB_URI;
             MongoClientURI dbUri = new MongoClientURI(dbUriValue);
@@ -65,18 +67,15 @@ public class DataFetcher {
         } catch (Exception e) {
             Logger.error("Index creation failed - " + e.toString());
         }
-    }
 
-    public static synchronized DataFetcher getInstance() throws Exception {
-        if (instance == null) {
-            instance = new DataFetcher();
-        }
-        return instance;
-    }
+        //clean-up phase setup
+        //
+        lifecycle.addStopHook(() -> {
 
-    public void invalidate() {
-        instance.client.close();
-        instance = null;
+            client.close();
+
+            return F.Promise.pure(null);
+        });
     }
 
     /**
@@ -90,12 +89,22 @@ public class DataFetcher {
     public FindIterable<Document> fetchStats(String appId, long startingFrom, long requestDate) throws IOException {
         //initialize db and collection objects
         //if config values are not given, then use defaults
-        MongoDatabase adminChat = getDB();
-        MongoCollection<Document> statistics = getCollection(adminChat);
+        MongoDatabase adminChat;
+        MongoCollection<Document> statistics;
+
+        try {
+            adminChat = getDB();
+            statistics = getCollection(adminChat);
+        } catch (Exception e) {
+            Logger.error("Error accessing database : " + e.toString());
+            return null;
+        }
+
         //find all apps with the given appId, where 'created_at' field is greater than new Date(System.currentTimeMillis() - startingFrom))
         FindIterable<Document> stats = statistics.find(new BasicDBObject(Utils.APP_ID_KEY, appId)
                 .append(Utils.CREATED_AT_KEY, new BasicDBObject("$gte", new Date(requestDate - startingFrom))))
                 .sort(new BasicDBObject(Utils.CREATED_AT_KEY, 1));
+
         return stats;
     }
 
@@ -128,7 +137,7 @@ public class DataFetcher {
     }
 
     private MongoDatabase getDB() {
-        return instance.client.getDatabase(db);
+        return client.getDatabase(db);
     }
 
     //TODO: REMOVE

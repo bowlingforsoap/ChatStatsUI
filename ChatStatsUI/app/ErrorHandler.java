@@ -1,4 +1,5 @@
 import controllers.Application;
+
 import play.Configuration;
 import play.Environment;
 import play.api.OptionalSourceMapper;
@@ -9,8 +10,9 @@ import play.mvc.Http;
 import play.mvc.Result;
 import play.Logger;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
+import com.google.inject.Provider;
+
+import com.google.inject.Inject;
 
 /**
  * Created by qb-user on 8/6/15.

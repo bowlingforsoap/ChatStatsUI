@@ -1,5 +1,6 @@
 package controllers;
 
+import com.google.inject.Inject;
 import com.mongodb.client.FindIterable;
 import controllers.utils.FileUtil;
 import controllers.utils.Utils;
@@ -17,6 +18,15 @@ public class Application extends Controller {
     public static final long HOUR = 60 * 60 * 1000;
     public static final long DAY = 24 * HOUR;
     public static final long MONTH = 31 * DAY;
+
+    private final DataFetcher dataFetcher;
+    private final FileUtil fileUtil;
+
+    @Inject
+    public Application(DataFetcher dataFetcher, FileUtil fileUtil) {
+        this.dataFetcher = dataFetcher;
+        this.fileUtil = fileUtil;
+    }
 
     /**
      * Gets invoked when you access the main page.
@@ -46,7 +56,7 @@ public class Application extends Controller {
         }
         if (appId == null || timeLength == null || timeLength.length() == 0 || timeLengthValue <= 0 || appId.length() == 0) {
             //if the given parameters are not valid -> erase the contents of the CSV dataset for the corresponding session
-            FileUtil.eraseDatafileContent(sessionId);
+            fileUtil.eraseDatafileContent(sessionId);
         } else {
             //calculate the required time length period
             long startingFrom = 0;
@@ -62,9 +72,9 @@ public class Application extends Controller {
                     break;
             }
             //write statistics to file
-            FindIterable<Document> stats = DataFetcher.getInstance().fetchStats(appId, startingFrom, requestDate);
+            FindIterable<Document> stats = dataFetcher.fetchStats(appId, startingFrom, requestDate);
             String statsCsvString = Utils.statsToStringCsv(stats, startingFrom, timezoneOffset, requestDate);
-            FileUtil.writeDataToFile(statsCsvString, sessionId);
+            fileUtil.writeDataToFile(statsCsvString, sessionId);
 
             //aggregate the results
             if (session("aggregateResults") != null) {
@@ -72,7 +82,7 @@ public class Application extends Controller {
             }
         }
 
-        return ok(views.html.index.render(DataFetcher.getInstance().fetchApps(), Arrays.asList("hour", "day", "month"),
+        return ok(views.html.index.render(dataFetcher.fetchApps(), Arrays.asList("hour", "day", "month"),
                 Utils.getLegendLabels(), aggrResults, session(), Utils.getLegendAbbreviations(), Utils.STATS_PERIOD_SEC));
     }
 
@@ -105,7 +115,6 @@ public class Application extends Controller {
         return redirect("/");
     }
 
-    //TODO: check if needed
     /**
      * Returns the required resource.
      *
@@ -113,6 +122,6 @@ public class Application extends Controller {
      * @return the resource
      */
     public Result getResource(String file) {
-        return ok(play.Play.application().getFile(Utils.DEFAULT_RESOURCE_FOLDER + file));
+        return ok(play.Play.application().getFile(FileUtil.DEFAULT_RESOURCE_FOLDER + file));
     }
 }

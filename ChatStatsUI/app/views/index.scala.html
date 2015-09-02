@@ -162,11 +162,11 @@
                   //saves settings from the previous update and cleans the session
                   function setData() {
                     document.getElementById('appId').value = '@session.get("appId")'
-                    /*@if(session.get("timeLength") == null || session.get("timeLength").length == 0) {
+                    @if(session.get("timeLength") == null || session.get("timeLength").length == 0) {
                         //aka: if null -> 'day'
                         document.getElementById('timeLength').value = '@timeLengths.get(1)'} else {
                         document.getElementById('timeLength').value = '@session.get("timeLength")'
-                    }*/
+                    }
                     document.getElementById('timeLengthValue').value = '@session.get("timeLengthValue")'
                     document.getElementById("timezoneOffset").value = new Date().getTimezoneOffset();
                     aggregateResults = '@session.get("aggregateResults")';
