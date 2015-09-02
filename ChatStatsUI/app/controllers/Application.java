@@ -1,7 +1,8 @@
 package controllers;
 
 import com.mongodb.client.FindIterable;
-import controllers.util.Utils;
+import controllers.utils.FileUtil;
+import controllers.utils.Utils;
 import models.DataFetcher;
 import org.bson.Document;
 import play.data.DynamicForm;
@@ -23,9 +24,9 @@ public class Application extends Controller {
      * @return
      * @throws Exception
      */
-    public static Result index() throws Exception {
+    public Result index() throws Exception {
         String sessionId = Utils.getSessionId(session());
-        String appId = session("appId");
+        String appId = session(Utils.APP_ID_KEY);
         String timeLength = session("timeLength");
         long requestDate = System.currentTimeMillis();
         long timeLengthValue;
@@ -40,10 +41,12 @@ public class Application extends Controller {
             // default values
             timeLengthValue = 1;
             timezoneOffset = 0;
+            session("timeLengthValue", "1");
+            session("timezoneOffset", "0");
         }
         if (appId == null || timeLength == null || timeLength.length() == 0 || timeLengthValue <= 0 || appId.length() == 0) {
             //if the given parameters are not valid -> erase the contents of the CSV dataset for the corresponding session
-            Utils.eraseDatafileContent(sessionId);
+            FileUtil.eraseDatafileContent(sessionId);
         } else {
             //calculate the required time length period
             long startingFrom = 0;
@@ -61,7 +64,7 @@ public class Application extends Controller {
             //write statistics to file
             FindIterable<Document> stats = DataFetcher.getInstance().fetchStats(appId, startingFrom, requestDate);
             String statsCsvString = Utils.statsToStringCsv(stats, startingFrom, timezoneOffset, requestDate);
-            Utils.writeDataToFile(statsCsvString, sessionId);
+            FileUtil.writeDataToFile(statsCsvString, sessionId);
 
             //aggregate the results
             if (session("aggregateResults") != null) {
@@ -70,7 +73,7 @@ public class Application extends Controller {
         }
 
         return ok(views.html.index.render(DataFetcher.getInstance().fetchApps(), Arrays.asList("hour", "day", "month"),
-                Arrays.asList(Utils.KEYS_TO_PARSE), aggrResults, session(), Arrays.asList(Utils.ABBR_METRICS), Utils.STATS_PERIOD_SEC));
+                Utils.getLegendLabels(), aggrResults, session(), Utils.getLegendAbbreviations(), Utils.STATS_PERIOD_SEC));
     }
 
     /**
@@ -79,11 +82,11 @@ public class Application extends Controller {
      * @return
      * @throws Exception
      */
-    public static Result updateSettings() throws Exception {
+    public Result updateSettings() throws Exception {
         //get the form
         DynamicForm dForm = Form.form().bindFromRequest();
         //retrieve the data
-        String appId = dForm.get("appId");
+        String appId = dForm.get(Utils.APP_ID_KEY);
         String timeLengthValue = dForm.get("timeLengthValue");
         String timeLength = dForm.get("timeLength");
         String timezoneOffset = dForm.get("timezoneOffset");
@@ -103,14 +106,13 @@ public class Application extends Controller {
     }
 
     //TODO: check if needed
-
     /**
      * Returns the required resource.
      *
      * @param file file name
      * @return the resource
      */
-    public static Result getResource(String file) {
+    public Result getResource(String file) {
         return ok(play.Play.application().getFile(Utils.DEFAULT_RESOURCE_FOLDER + file));
     }
 }

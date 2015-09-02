@@ -7,6 +7,7 @@ import play.http.DefaultHttpErrorHandler;
 import play.libs.F;
 import play.mvc.Http;
 import play.mvc.Result;
+import play.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -30,7 +31,8 @@ public class ErrorHandler extends DefaultHttpErrorHandler {
 
     @Override
     public F.Promise<Result> onServerError(Http.RequestHeader requestHeader, Throwable throwable) {
-        System.out.println("ErrorHandler.onServerError : requestHeader = [" + requestHeader + "], throwable = [" + throwable + "]");
+        Logger.error("Server Error : requestHeader = [" + requestHeader + "], throwable = [" + throwable + "]");
+        Logger.error("Clearing session data");
         Application.session().clear();
         return super.onServerError(requestHeader, throwable);
     }

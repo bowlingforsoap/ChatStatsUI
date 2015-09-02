@@ -12,14 +12,16 @@ import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import controllers.util.Utils;
+import com.mongodb.client.model.IndexOptions;
+import controllers.utils.Utils;
 import org.bson.Document;
-import org.bson.types.ObjectId;
+import play.Logger;
+import play.inject.ApplicationLifecycle;
 
-import javax.rmi.CORBA.Util;
 import java.io.IOException;
-import java.net.UnknownHostException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
 
 /**
  * Performs operations with data in MongoDB and manages MongoClient connection.
@@ -45,10 +47,23 @@ public class DataFetcher {
         try {
             String dbUriValue = Utils.CHAT_STATS_DB_URI;
             MongoClientURI dbUri = new MongoClientURI(dbUriValue);
+
             db = dbUri.getDatabase();
             client = new MongoClient(dbUri);
         } catch (MongoException | NullPointerException e) {
+            Logger.error("Exception while parsing " + Utils.CHAT_STATS_DB_URI_KEY + ", using defaults : [ host : " + DEFAULT_STATS_HOST + " ], [ db : " + DEFAULT_STATS_DB + " ]");
             client = new MongoClient(DEFAULT_STATS_HOST);
+            db = DEFAULT_STATS_DB;
+        }
+
+        //index creation phase
+        //
+        try {
+            client.getDatabase(db).getCollection(DEFAULT_STATS_COLL)
+                    .createIndex(new BasicDBObject(Utils.APP_ID_KEY, 1).append(Utils.CREATED_AT_KEY, 1), new IndexOptions().background(true));
+            Logger.info("Finished index creation");
+        } catch (Exception e) {
+            Logger.error("Index creation failed - " + e.toString());
         }
     }
 
@@ -78,9 +93,9 @@ public class DataFetcher {
         MongoDatabase adminChat = getDB();
         MongoCollection<Document> statistics = getCollection(adminChat);
         //find all apps with the given appId, where 'created_at' field is greater than new Date(System.currentTimeMillis() - startingFrom))
-        FindIterable<Document> stats = statistics.find(new BasicDBObject("app_id", appId)
-                .append("created_at", new BasicDBObject("$gte", new Date(requestDate - startingFrom))))
-                .sort(new BasicDBObject("created_at", 1));
+        FindIterable<Document> stats = statistics.find(new BasicDBObject(Utils.APP_ID_KEY, appId)
+                .append(Utils.CREATED_AT_KEY, new BasicDBObject("$gte", new Date(requestDate - startingFrom))))
+                .sort(new BasicDBObject(Utils.CREATED_AT_KEY, 1));
         return stats;
     }
 
@@ -91,35 +106,34 @@ public class DataFetcher {
      * @return
      */
     public List<String> fetchApps() {
-        MongoDatabase adminChat = getDB();
-        MongoCollection<Document> statistics = getCollection(adminChat);
-        AggregateIterable<Document> apps = statistics.aggregate(Arrays.asList(new BasicDBObject("$group", new BasicDBObject("_id", "$app_id"))));
+        MongoDatabase adminChat;
+        MongoCollection<Document> statistics;
+
+        try {
+            adminChat = getDB();
+            statistics = getCollection(adminChat);
+        } catch (Exception e) {
+            Logger.error("Error accessing database : " + e.toString());
+            return null;
+        }
+
+        AggregateIterable<Document> apps = statistics.aggregate(Arrays.asList(
+                new BasicDBObject("$project", new BasicDBObject(Utils.APP_ID_KEY, 1).append("_id", 0)),
+                new BasicDBObject("$group", new BasicDBObject("_id", "$" + Utils.APP_ID_KEY))));
         return Utils.appsToList(apps);
     }
 
     private MongoCollection<Document> getCollection(MongoDatabase adminChat) {
-        MongoCollection<Document> statistics;
-        if (DEFAULT_STATS_COLL == null || DEFAULT_STATS_COLL.length() == 0) {
-            statistics = adminChat.getCollection(DEFAULT_STATS_COLL);
-        } else {
-            statistics = adminChat.getCollection(DEFAULT_STATS_COLL);
-        }
-        return statistics;
+        return adminChat.getCollection(DEFAULT_STATS_COLL);
     }
 
     private MongoDatabase getDB() {
-        MongoDatabase adminChat;
-        if (db == null || db.length() == 0) {
-            adminChat = instance.client.getDatabase(DEFAULT_STATS_DB);
-        } else {
-            adminChat = instance.client.getDatabase(db);
-        }
-        return adminChat;
+        return instance.client.getDatabase(db);
     }
 
     //TODO: REMOVE
     //in case you need to generate some data
-    public void insertData(int n) {
+    /*public void insertData(int n) {
         MongoDatabase adminChat = instance.client.getDatabase(DEFAULT_STATS_DB);
         MongoCollection<Document> statistics = adminChat.getCollection(DEFAULT_STATS_COLL);
         Random randGenerator = new Random();
@@ -136,10 +150,10 @@ public class DataFetcher {
                 for (int i = 0; i < n; i++) {
                     doc = new Document();
                     doc.put("_id", new ObjectId());
-                    doc.put("created_at", new Date(System.currentTimeMillis() - timeLenght * randGenerator.nextInt(100) / 100));
-                    doc.put("app_id", app);
-                    for (int i1 = 1; i1 < Utils.KEYS_TO_PARSE.length; i1++) {
-                        String key = Utils.KEYS_TO_PARSE[i1];
+                    doc.put(Utils.CREATED_AT_KEY, new Date(System.currentTimeMillis() - timeLenght * randGenerator.nextInt(100) / 100));
+                    doc.put(Utils.APP_ID_KEY, app);
+                    for (int i1 = 1; i1 < Utils.getKeysToParse().size(); i1++) {
+                        String key = Utils.getKeysToParse().get(i1);
                         if (key.equals(Utils.CONNECTIONS_METRIC) || key.equals(Utils.UNIQUE_CONNECTIONS_METRIC)) {
                             doc.put(key, new Long(randGenerator.nextInt(1000)));
                         } else {
@@ -151,5 +165,5 @@ public class DataFetcher {
             }
         }
         statistics.insertMany(docs);
-    }
+    }*/
 }

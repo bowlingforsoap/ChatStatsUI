@@ -1,14 +1,8 @@
 /**
  * Created by Strelchenko Vadym on 29.05.15.
  */
-import controllers.util.Utils;
 import models.DataFetcher;
 import play.*;
-import play.libs.Akka;
-import scala.concurrent.duration.Duration;
-
-import java.io.File;
-import java.util.concurrent.TimeUnit;
 
 public class Global extends GlobalSettings {
     //left for future improvements
@@ -42,11 +36,11 @@ public class Global extends GlobalSettings {
 
     @Override
     public void onStop(Application app) {
-        try {
+        /*try {
             DataFetcher.getInstance().invalidate();
         } catch (Exception e) {
             e.printStackTrace();
-        }
+        }*/
         super.onStop(app);
     }
 }

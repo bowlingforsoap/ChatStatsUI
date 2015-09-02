@@ -1,4 +1,6 @@
-@(appsFromDB: java.util.List[java.lang.String], timeLengths: java.util.List[java.lang.String], keysToParse: java.util.List[java.lang.String], aggrResults: java.util.List[java.lang.Long], session: play.mvc.Http.Session, abbreviations : java.util.List[java.lang.String], statsCollectionPeriod : java.lang.Integer)
+@(appsFromDB: java.util.List[java.lang.String], timeLengths: java.util.List[java.lang.String],
+        keysToParse: java.util.List[java.lang.String], aggrResults: java.util.List[java.lang.Long], session: play.mvc.Http.Session, abbreviations : java.util.List[java.lang.String],
+        statsCollectionPeriod : java.lang.Integer)
 
 <!DOCTYPE html>
 
@@ -27,7 +29,7 @@
                             }
                         </select></td></tr>
                         <tr><td>
-                        Time length :</td><td><input id="timeLengthValue" name="timeLengthValue" onclick="dropTextFieldValue()" placeholder="Insert an integer value here" type="number"/>
+                        Time length :</td><td><input id="timeLengthValue" required="required" name="timeLengthValue" onclick="dropTextFieldValue()" placeholder="Insert an integer value here" type="number"/>
                         </td></tr>
                         <tr><td></td><td><select name="timeLength" required="required" class="select-style" id="timeLength">
                             @for(timeLength <- timeLengths) {
@@ -36,7 +38,6 @@
                         </select></td></tr>
                         <div class="squaredThree">
                             <tr><td>Aggregate results : </td><td id="aggrcheckbox"><input type="checkbox" name="aggregateResults" id="aggregateResults"></td></tr>
-                            @*<input type="checkbox" value="None" id="squaredThree" name="check" />*@
                             <label for="aggregateResults"></label>
                         </div>
                     </table>
@@ -53,8 +54,8 @@
                 @if(aggrResults != null && aggrResults.size() > 0){
                     <hr>
                 <table id="aggregateresults" class="settings">
-                    @for(i <- 0 to aggrResults.size-1){
-                        <tr class="@abbreviations.get(i)_@i" title="@keysToParse.get(i + 1)"><td>@abbreviations.get(i) sum : </td><td>@aggrResults.get(i)</td></tr>
+                    @for(i <- 0 to aggrResults.size - 1){
+                        <tr class="@abbreviations.get(i + 1)_@i" title="@keysToParse.get(i + 1)"><td>@abbreviations.get(i + 1) sum : </td><td>@aggrResults.get(i)</td></tr>
                     }
                 </table>
                     }
@@ -90,27 +91,27 @@
 
             <!-- graph initialization -->
             <script type="text/javascript">
-                  var labelsList = '@keysToParse'
-                  var dataset = '/resources/dataset@session.get("id")'
-                  dataset += ".csv"
+                  var labelsList = '@keysToParse';
+                  var dataset = '/resources/dataset@session.get("id")';
+                  dataset += ".csv";
                   @if(session.get("appId")){
-                    var appId = "@session.get("appId")"
+                    var appId = "@session.get("appId")";
                   }else{
-                    var appId = "-----"
+                    var appId = "-----";
                   }
                   @if(session.get("timeLengthValue") != null) {
-                    var timeLengthValue = @session.get("timeLengthValue")
+                    var timeLengthValue = '@session.get("timeLengthValue")';
                   }else{
-                      var timeLengthValue = null
+                      var timeLengthValue = null;
                   }
-                  var visibilityList = []
+                  var visibilityList = [];
 
-                  labelsList = labelsList.replace('[','')
-                  labelsList = labelsList.replace(']','')
-                  labelsList = labelsList.split(',')
+                  labelsList = labelsList.replace('[','');
+                  labelsList = labelsList.replace(']','');
+                  labelsList = labelsList.split(',');
                   for (i = 0; i < labelsList.length; i++) {
-                    labelsList[i] = labelsList[i].trim()
-                    visibilityList.push(true)
+                    labelsList[i] = labelsList[i].trim();
+                    visibilityList.push(true);
                   }
 
                   g = new Dygraph(
@@ -131,7 +132,7 @@
 
                   //alter graph on checkbox change
                   function change(el) {
-                    g.setVisibility(parseInt(el.id), el.checked)
+                    g.setVisibility(parseInt(el.id), el.checked);
                   }
 
                   //executed when graph is ready (loaded)
@@ -146,21 +147,12 @@
                         abbreviationsArray[i] = abbreviationsArray[i].trim();
                     }
 
-                    console.log("g.getLabels() : " + g.getLabels());
-                    console.log("labelsList : " + labelsList);
-                    console.log("abbreviationsArray : " + abbreviationsArray);
-                    console.log("g.getColors() : " + plotColors);
-                    for (var j = 0; j < abbreviationsArray.length; j++) {
-                        console.log(abbreviationsArray[j]);
-
-                        var elements = document.getElementsByClassName(abbreviationsArray[j] + "_" + j);
-                        console.log(elements);
-                        console.log(elements);
+                    for (var j = 1; j < abbreviationsArray.length; j++) {
+                        var elements = document.getElementsByClassName(abbreviationsArray[j] + "_" + (j - 1));
 
                         for (var i = 0; i < elements.length; i++){
-                            console.log(plotColors[j]);
                             try {
-                                elements[i].style.color = plotColors[j];
+                                elements[i].style.color = plotColors[j - 1];
                             } catch (err) {}
                         }
                     }
@@ -196,8 +188,8 @@
                         <table id="displaytable">
                             <tr>
                                 <td align="center">
-                                    @for(i <- 0 to abbreviations.size-1){
-                                        <span title="@keysToParse.get(i + 1)" class="@abbreviations.get(i)_@i"><input type="checkbox" id="@i" checked onclick="change(this)">@abbreviations.get(i)</span>
+                                    @for(i <- 0 to abbreviations.size - 2){
+                                        <span title="@keysToParse.get(i + 1)" class="@abbreviations.get(i + 1)_@i"><input type="checkbox" id="@i" checked onclick="change(this)">@abbreviations.get(i + 1)</span>
                                     }
                                 </td>
                             </tr>

@@ -1,18 +1,18 @@
-package controllers.util;
+package controllers.utils;
 
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.FindIterable;
 import org.bson.Document;
 import play.Play;
 import play.mvc.Http.*;
+import play.Logger;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
- * Helper methods for working with files and interpreting db queries results.<p/>
- * Contains
+ * Helper constants and methods for interpreting the results of db queries.<p/>
  * <p>
  * Created by Strelchenko Vadym on 29.05.15.
  */
@@ -31,25 +31,41 @@ public class Utils {
     /**
      * Fields from db to work with. The first one will become the X-axis.
      */
-    public static final String[] KEYS_TO_PARSE;
+    private static List<String> keysToParse = new ArrayList<>();
+    private static List<String> legendLabels = new ArrayList<>();
+    private static List<String> legendAbbreviations = new ArrayList<>();
+    /**
+     * Keys - legend labels; values - abbreviations for the bottom docker and left aggregation menu
+     */
+    private static Map<String, String> legendLabelsAndAbbreviations = new HashMap<>();
     /**
      * Statistics db.
      */
     public static final String CHAT_STATS_DB_URI;
+    public static final String CHAT_STATS_DB_URI_KEY = "--QB_MONGODB_CHAT_STATS_DB_URI";
 
     public static final String CONNECTIONS_METRIC = "connections";
     public static final String UNIQUE_CONNECTIONS_METRIC = "uniqueConnections";
 
+    private static final String CAMEL_STYLE_SPLIT_REGEX = "(?<!(^|[A-Z]))(?=[A-Z])|(?<!^)(?=[A-Z][a-z])";
+
+    public static final String CREATED_AT_KEY = "createdAt";
+    public static final String APP_ID_KEY = "appId";
+
     //Set all the static constants.
     static {
-        ArrayList<String> keysToParse = new ArrayList<>();
         Properties props = new Properties();
         InputStream initProperties = null;
         String[] statisticsMetrics = null;
         int period = 5; // default value
         String chatStatsDbUri = null;
+        String[] metricNameWords;
 
-        keysToParse.add("created_at");
+        keysToParse.add(CREATED_AT_KEY);
+        legendLabels.add(CREATED_AT_KEY);
+        metricNameWords = CREATED_AT_KEY.split(CAMEL_STYLE_SPLIT_REGEX);
+        legendAbbreviations.add(abbreviationStringForMetric(metricNameWords, false));
+
         try {
 
             initProperties = new FileInputStream(CHAT_HOME + "/etc/init.properties");
@@ -60,85 +76,58 @@ public class Utils {
             //parse STATS_PERIOD_SEC
             period = Integer.valueOf(props.getProperty("stats/stats-archiv/stats-per-logger/timeout"));
             //parse --QB_MONGODB_CHAT_STATS_DB_URI
-            chatStatsDbUri = props.getProperty("--QB_MONGODB_CHAT_STATS_DB_URI");
+            chatStatsDbUri = props.getProperty(CHAT_STATS_DB_URI_KEY);
 
         } catch (IOException e) {
-            System.out.println("Utils.static initializer : IOException while initializing critical constants");
+            Logger.error("IOException while initializing critical constants");
             e.printStackTrace(System.out);
-            System.out.println("Application continues to run on defaults");
+            Logger.error("Application continues to run on defaults");
         } catch (NullPointerException e) {
-            System.out.println("Utils.static initializer : NullPointerException while initializing critical constants");
+            Logger.error("NullPointerException while initializing critical constants");
             e.printStackTrace(System.out);
-            System.out.println("Application continues to run on defaults");
+            Logger.error("Application continues to run on defaults");
         } finally {
             if (initProperties != null) {
                 try {
                     initProperties.close();
                 } catch (IOException e1) {
-                    System.out.println("Utils.static initializer : IOException while closing the input stream");
+                    Logger.error("IOException while closing the input stream");
                     e1.printStackTrace();
                 }
             }
         }
 
-        //set KEYS_TO_PARSE
+        //prepare KEYS_TO_PARSE, LEGEND_LABELS and LEGEND_ABBREVIATIONS
         try {
-            for (int i = 0; i < statisticsMetrics.length; i++) {
-                statisticsMetrics[i] = statisticsMetrics[i] + "PerUnit";
+            for (String metric : statisticsMetrics) {
+                legendLabels.add(metric + "PerUnit");
+                //separate metric by words
+                metricNameWords = metric.split(CAMEL_STYLE_SPLIT_REGEX);
+                legendAbbreviations.add(abbreviationStringForMetric(metricNameWords, true));
             }
             keysToParse.addAll(Arrays.asList(statisticsMetrics));
         } catch (NullPointerException e) {
-            System.out.println("Utils.static initializer : NullPointerException while parsing metrics");
+            Logger.error("NullPointerException while parsing metrics");
             e.printStackTrace(System.out);
-            System.out.println("Application continues to run on defaults");
+            Logger.error("Application continues to run on defaults");
         }
+
+        //custom metrics
         keysToParse.add(CONNECTIONS_METRIC);
+        legendLabels.add(CONNECTIONS_METRIC);
+        metricNameWords = CONNECTIONS_METRIC.split(CAMEL_STYLE_SPLIT_REGEX);
+        legendAbbreviations.add(abbreviationStringForMetric(metricNameWords, false));
+
         keysToParse.add(UNIQUE_CONNECTIONS_METRIC);
-        KEYS_TO_PARSE = keysToParse.toArray(new String[0]);
+        legendLabels.add(UNIQUE_CONNECTIONS_METRIC);
+        metricNameWords = UNIQUE_CONNECTIONS_METRIC.split(CAMEL_STYLE_SPLIT_REGEX);
+        legendAbbreviations.add(abbreviationStringForMetric(metricNameWords, false));
 
         //set STATS_PERIOD_SEC
         STATS_PERIOD_SEC = period;
 
         //set QB_MONGODB_CHAT_STATS_DB_URI
         CHAT_STATS_DB_URI = chatStatsDbUri;
-    }
-
-    /**
-     * First letters from metric name in init.properties (plus "connections" and "uniqueConnections")
-     */
-    public static final String[] ABBR_METRICS = new String[KEYS_TO_PARSE.length - 1];
-    static {
-        for (int i = 1; i < KEYS_TO_PARSE.length; i++) {
-            String[] separateMetricNameParts = KEYS_TO_PARSE[i].split("(?<!(^|[A-Z]))(?=[A-Z])|(?<!^)(?=[A-Z][a-z])");
-            ABBR_METRICS[i - 1] = "";
-            for (String metricNamePart : separateMetricNameParts) {
-                ABBR_METRICS[i - 1] = ABBR_METRICS[i - 1] + metricNamePart.charAt(0);
-            }
-            ABBR_METRICS[i - 1] = ABBR_METRICS[i - 1].toUpperCase();
-        }
-    }
-
-    /**
-     * Erases the content of the CSV file for the corresponding {@code sessionId}.
-     *
-     * @param sessionId
-     * @throws IOException
-     */
-    public static void eraseDatafileContent(String sessionId) throws IOException {
-        new FileWriter(Play.application().getFile(Utils.DEFAULT_RESOURCE_FOLDER + Utils.DEFAULT_STATS_CSV_FILE + sessionId + ".csv")).close();
-    }
-
-    /**
-     * Writes {@code data} to the file named: ({@link Utils}.DEFAULT_RESOURCE_FOLDER + {@link Utils}.DEFAULT_STATS_CSV_FILE + {@code sessionId} + ".csv").
-     *
-     * @param data
-     * @param sessionId
-     * @throws IOException
-     */
-    public static void writeDataToFile(String data, String sessionId) throws IOException {
-        FileWriter cswWriter = new FileWriter(Play.application().getFile(Utils.DEFAULT_RESOURCE_FOLDER + Utils.DEFAULT_STATS_CSV_FILE + sessionId + ".csv"));
-        cswWriter.write(data);
-        cswWriter.close();
     }
 
     /**
@@ -188,7 +177,7 @@ public class Utils {
 
             if (tempEntry != null) {
                 //handle the first entry
-                long firstEntryDate = ((Date) tempEntry.get(KEYS_TO_PARSE[0])).getTime();
+                long firstEntryDate = ((Date) tempEntry.get(keysToParse.get(0))).getTime();
                 if (startingFrom - Utils.STATS_PERIOD_SEC * 1000 < firstEntryDate) {
                     Utils.appendZeroEntry(firstEntryDate - Utils.STATS_PERIOD_SEC * 1000, timezoneDiff, builder);
                 }
@@ -204,7 +193,7 @@ public class Utils {
 
         //handle the last entry
         if (tempEntry != null) {
-            long lastEntryDate = ((Date) tempEntry.get(KEYS_TO_PARSE[0])).getTime();
+            long lastEntryDate = ((Date) tempEntry.get(keysToParse.get(0))).getTime();
             if (lastEntryDate + Utils.STATS_PERIOD_SEC * 1000 < requestDate) {
                 Utils.appendZeroEntry(lastEntryDate + Utils.STATS_PERIOD_SEC * 1000, timezoneDiff, builder);
                 //append an entry for the current date
@@ -224,29 +213,31 @@ public class Utils {
      * @return
      */
     public static List<Long> aggregateResults(FindIterable<Document> appStats) {
-        List<Long> aggregationResults = new ArrayList<>(ABBR_METRICS.length);
+        List<Long> aggregationResults = new ArrayList<>(keysToParse.size() - 1);
         Iterator<Document> appStatsIterator = appStats.iterator();
         Document entry;
         long temp;
 
         //fill the results list 0s
-        for (int i = 0; i < ABBR_METRICS.length; i++) {
+        for (int i = 0; i < keysToParse.size() - 1; i++) {
             aggregationResults.add((long) 0);
         }
         //fill it with actual data
         while (appStatsIterator.hasNext()) {
             entry = appStatsIterator.next();
-            for (int i = 0; i < ABBR_METRICS.length; i++) {
-                String key = KEYS_TO_PARSE[i + 1];
+
+            for (int i = 1; i < keysToParse.size(); i++) {
+                String key = keysToParse.get(i);
                 Object metric = entry.get(key);
+
                 if (metric != null) {
                     if (key.equals(CONNECTIONS_METRIC) || key.equals(UNIQUE_CONNECTIONS_METRIC)) {
                         temp = ((Number) metric).longValue();
-                        if (temp > aggregationResults.get(i)) {
-                            aggregationResults.set(i, temp);
+                        if (temp > aggregationResults.get(i - 1)) {
+                            aggregationResults.set(i - 1, temp);
                         }
                     } else {
-                        aggregationResults.set(i, aggregationResults.get(i) + (long) Math.ceil(((double) metric * Utils.STATS_PERIOD_SEC)));
+                        aggregationResults.set(i - 1, aggregationResults.get(i - 1) + (long) Math.ceil(((double) metric * Utils.STATS_PERIOD_SEC)));
                     }
                 }
             }
@@ -259,19 +250,19 @@ public class Utils {
         Object temp;
 
         //parse date
-        builder.append(Utils.DATE_FORMAT.format(((Date) entry.get(KEYS_TO_PARSE[0])).getTime() + timezoneDiff * 60 * 1000));
+        builder.append(Utils.DATE_FORMAT.format(((Date) entry.get(keysToParse.get(0))).getTime() + timezoneDiff * 60 * 1000));
         builder.append(",");
         //parse everything else
-        for (int i = 1; i < KEYS_TO_PARSE.length - 1; i++) {
-            temp = entry.get(KEYS_TO_PARSE[i]);
+        for (int i = 1; i < keysToParse.size() - 1; i++) {
+            temp = entry.get(keysToParse.get(i));
             if (temp == null) {
                 builder.append(0);
             } else {
-                builder.append(entry.get(KEYS_TO_PARSE[i]));
+                builder.append(entry.get(keysToParse.get(i)));
             }
             builder.append(",");
         }
-        builder.append(entry.get(KEYS_TO_PARSE[KEYS_TO_PARSE.length - 1]));
+        builder.append(entry.get(keysToParse.get(keysToParse.size() - 1)));
         builder.append("\n");
     }
 
@@ -279,7 +270,7 @@ public class Utils {
         builder.append(Utils.DATE_FORMAT.format(entryDate + timezoneDiff * 60 * 1000));
         builder.append(",");
         //parse everything else
-        for (int i = 1; i < KEYS_TO_PARSE.length - 1; i++) {
+        for (int i = 1; i < keysToParse.size() - 1; i++) {
             builder.append(0);
             builder.append(",");
         }
@@ -296,4 +287,30 @@ public class Utils {
         return appsFromDB;
     }
 
+
+    private static String abbreviationStringForMetric(String[] metricSeparateWords, boolean perUnit) {
+        StringBuilder sb = new StringBuilder();
+
+        for (String metricPart : metricSeparateWords) {
+            sb.append(metricPart.charAt(0));
+        }
+
+        if (perUnit) {
+            sb.append("PU");
+        }
+
+        return sb.toString().toUpperCase();
+    }
+
+    public static List<String> getKeysToParse() {
+        return keysToParse;
+    }
+
+    public static List<String> getLegendLabels() {
+        return legendLabels;
+    }
+
+    public static List<String> getLegendAbbreviations() {
+        return legendAbbreviations;
+    }
 }
