@@ -20,7 +20,7 @@ public class Utils {
     /**
      * Format expected in dygraphs js.
      */
-    public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss:SS");
+    public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
     public static final Integer STATS_PERIOD_SEC; //default
     public static final String CHAT_HOME;
     static {
