@@ -73,8 +73,10 @@ public class Utils {
             statisticsMetrics = props.getProperty("--QB_CHAT_STATISTICS_METRICS").split(",");
             //parse STATS_PERIOD_SEC
             period = Integer.valueOf(props.getProperty("stats/stats-archiv/stats-per-logger/timeout"));
+            Logger.info("Statistics period set to : " + period);
             //parse --QB_MONGODB_CHAT_STATS_DB_URI
             chatStatsDbUri = props.getProperty(CHAT_STATS_DB_URI_KEY);
+            Logger.info("Chat statistics db uri set to : " + chatStatsDbUri);
 
         } catch (IOException e) {
             Logger.error("IOException while initializing critical constants");
