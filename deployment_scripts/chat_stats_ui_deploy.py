@@ -45,9 +45,8 @@ class ChatStatsUIDeployApp:
 
         # rm old target dir
         with cd(server_path["app_path"]):
-            with cd(app_dir + "/conf/etc"):
-                run("chmod 777 chat-stats-ui-init", warn_only=True)
-                run("bash chat-stats-ui-init stop", warn_only=True, pty=False)
+            run("chmod 777 conf/etc/chat-stats-ui-init", warn_only=True)
+            run("bash conf/etc/chat-stats-ui-init stop", warn_only=True, pty=False)
             run("rm -rf " + app_dir, warn_only=True)
         # put all required files into chat_stats_ui_path
         put("../ChatStatsUI/build/distributions/playBinary.zip", server_path["app_path"])
