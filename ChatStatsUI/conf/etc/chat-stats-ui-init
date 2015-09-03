@@ -28,11 +28,11 @@ start() {
 
 stop() {
     echo -n $"Stopping $prog: "
-    if [ -f ${homedir}/RUNNING_PID ] ; then
-        killproc=`cat ${homedir}/RUNNING_PID`
+    if [ -f ${homedir}/conf/etc/RUNNING_PID ] ; then
+        killproc=`cat ${homedir}/conf/etc/RUNNING_PID`
         kill $killproc
         echo killed ${killproc}
-#        rm -f ${homedir}/RUNNING_PID
+
     else
         failure $"Stopping $prog"
     fi
