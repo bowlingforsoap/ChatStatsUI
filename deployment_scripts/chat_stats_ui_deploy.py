@@ -28,7 +28,6 @@ class ChatStatsUIDeployApp:
         print(green("\nHosts: " + str(env.hosts) + "\n"))
 
         app_dir = "chat-stats-ui"
-        # path to the ChatStatsUI app
 
         tasks.execute(self.deploy, server_path, app_dir)
 
@@ -45,8 +44,9 @@ class ChatStatsUIDeployApp:
 
         # rm old target dir
         with cd(server_path["app_path"]):
-            run("chmod 777 conf/etc/chat-stats-ui-init", warn_only=True)
-            run("bash conf/etc/chat-stats-ui-init stop", warn_only=True, pty=False)
+            with cd(app_dir + "/conf/etc"):
+                run("chmod 777 conf/etc/chat-stats-ui-init", warn_only=True)
+                run("bash conf/etc/chat-stats-ui-init stop", warn_only=True, pty=False)
             run("rm -rf " + app_dir, warn_only=True)
         # put all required files into chat_stats_ui_path
         put("../ChatStatsUI/build/distributions/playBinary.zip", server_path["app_path"])
@@ -57,7 +57,7 @@ class ChatStatsUIDeployApp:
             run("rm -f playBinary.zip")
             run("mv playBinary " + app_dir)
 
-            with cd(app_dir):
+            with cd(app_dir + "/conf/etc"):
                 run("touch variables.conf")
                 files.append("variables.conf", "homedir=\"" + server_path["app_path"] + "/" + app_dir + "\"")
                 files.append("variables.conf", "exec=\"${homedir}/bin/playBinary\"")
@@ -67,8 +67,8 @@ class ChatStatsUIDeployApp:
                     # in case "resources" dir is absent
                     run("mkdir resources", warn_only=True)
 
-                run("chmod 777 conf/etc/chat-stats-ui-init")
-                run("bash conf/etc/chat-stats-ui-init start", pty=False)
+                run("chmod 777 chat-stats-ui-init")
+                run("bash chat-stats-ui-init start", pty=False)
 
 
 if __name__ == "__main__":
