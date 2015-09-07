@@ -68,5 +68,7 @@ public class FileUtil {
         cswWriter.close();
     }
 
-
+    public FileWriter getCsvFileWriter(String sessionId) throws  IOException {
+        return new FileWriter(Play.application().getFile(DEFAULT_RESOURCE_FOLDER + DEFAULT_STATS_CSV_FILE + sessionId + ".csv"));
+    }
 }

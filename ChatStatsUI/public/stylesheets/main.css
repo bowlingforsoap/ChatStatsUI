@@ -143,7 +143,7 @@ body {
 	color: #555;
     /* Without this, the body has excess horizontal scroll when the menu is open */
     overflow-x: hidden;
-	overflow-y: hidden;
+	/*overflow-y: hidden;*/
 }
 
 /*----------------------------------------------*/
@@ -182,11 +182,13 @@ body {
 #aggregateresults {
 	/*font-weight: bold;*/
 	font-size: 18px;
+	color: #424242;
 }
 
 #aggregateresults tr td:nth-child(even) {
 	text-align: right;
 }
+
 
 /*.settings {
 	margin: auto;
@@ -243,10 +245,12 @@ label[for="nav-trigger"] {
 }
 
 .nav-trigger:checked + label {
+	/* How much a menu trigger slides to */
 	left: 315px;
 }
 
 .nav-trigger:checked ~ .site-wrap {
+	/* How much of a menu gets exposed */
 	left: 315px;
 	box-shadow: 0 0 5px 5px rgba(0,0,0,0.5);
 }
@@ -269,9 +273,3 @@ html, body { height: 100%; width: 100%; /*font-family: Helvetica, Arial, sans-se
 	text-align: center;
 }
 
-.bottom {
-}
-
-hr {
-
-}

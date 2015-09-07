@@ -6,6 +6,7 @@ import org.bson.Document;
 import play.Play;
 import play.mvc.Http.*;
 import play.Logger;
+import scala.App;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
@@ -32,6 +33,7 @@ public class Utils {
     private static List<String> keysToParse = new ArrayList<>();
     private static List<String> legendLabels = new ArrayList<>();
     private static List<String> legendAbbreviations = new ArrayList<>();
+    public static Map<String, String> aggregationMethodsForKey = new HashMap<>();
     /**
      * Keys - legend labels; values - abbreviations for the bottom docker and left aggregation menu
      */
@@ -52,6 +54,7 @@ public class Utils {
 
     //Set all the static constants.
     static {
+        new HashMap<String, String>().keySet();
         Properties props = new Properties();
         InputStream initProperties = null;
         String[] statisticsMetrics = null;
@@ -100,6 +103,7 @@ public class Utils {
         //prepare KEYS_TO_PARSE, LEGEND_LABELS and LEGEND_ABBREVIATIONS
         try {
             for (String metric : statisticsMetrics) {
+                aggregationMethodsForKey.put(metric, "sum");
                 legendLabels.add(metric + "PerUnit");
                 //separate metric by words
                 metricNameWords = metric.split(CAMEL_STYLE_SPLIT_REGEX);
@@ -113,15 +117,20 @@ public class Utils {
         }
 
         //custom metrics
+        //
+        aggregationMethodsForKey.put(CONNECTIONS_METRIC, "max");
         keysToParse.add(CONNECTIONS_METRIC);
         legendLabels.add(CONNECTIONS_METRIC);
         metricNameWords = CONNECTIONS_METRIC.split(CAMEL_STYLE_SPLIT_REGEX);
         legendAbbreviations.add(abbreviationStringForMetric(metricNameWords, false));
 
+        aggregationMethodsForKey.put(UNIQUE_CONNECTIONS_METRIC, "max");
         keysToParse.add(UNIQUE_CONNECTIONS_METRIC);
         legendLabels.add(UNIQUE_CONNECTIONS_METRIC);
         metricNameWords = UNIQUE_CONNECTIONS_METRIC.split(CAMEL_STYLE_SPLIT_REGEX);
         legendAbbreviations.add(abbreviationStringForMetric(metricNameWords, false));
+
+        Logger.info(aggregationMethodsForKey.toString());
 
         //set STATS_PERIOD_SEC
         STATS_PERIOD_SEC = period;
@@ -147,136 +156,8 @@ public class Utils {
         return sessionId;
     }
 
-    /**
-     * Saves {@code appStats} statistics to file with respect to the {@code startingFrom} parameter and the current time.
-     *
-     * @param appStats
-     * @param startingFrom
-     * @param timezoneOffset
-     * @param requestDate
-     * @return
-     */
-    public static String statsToStringCsv(FindIterable<Document> appStats, long startingFrom, int timezoneOffset, long requestDate) {
-        StringBuilder builder = new StringBuilder();
-        int localTimezoneOffset = new Date().getTimezoneOffset();
-        int timezoneDiff = Math.abs(localTimezoneOffset - timezoneOffset);
-
-        if (localTimezoneOffset < timezoneOffset) {
-            timezoneDiff *= -1;
-        }
-
-        //append an entry for the startingFrom date
-        startingFrom = requestDate - startingFrom;
-        Utils.appendZeroEntry(startingFrom, timezoneDiff, builder);
-
-        //check appStats for entries
-        Iterator<Document> appStatsIterator = appStats.iterator();
-        Document tempEntry = null;
-        if (appStatsIterator.hasNext()) {
-            //get the first one
-            tempEntry = appStatsIterator.next();
-
-            if (tempEntry != null) {
-                //handle the first entry
-                long firstEntryDate = ((Date) tempEntry.get(keysToParse.get(0))).getTime();
-                if (startingFrom - Utils.STATS_PERIOD_SEC * 1000 < firstEntryDate) {
-                    Utils.appendZeroEntry(firstEntryDate - Utils.STATS_PERIOD_SEC * 1000, timezoneDiff, builder);
-                }
-                Utils.appendEntry(tempEntry, timezoneDiff, builder);
-
-                //handle all in the between
-                while (appStatsIterator.hasNext()) {
-                    tempEntry = appStatsIterator.next();
-                    Utils.appendEntry(tempEntry, timezoneDiff, builder);
-                }
-            }
-        }
-
-        //handle the last entry
-        if (tempEntry != null) {
-            long lastEntryDate = ((Date) tempEntry.get(keysToParse.get(0))).getTime();
-            if (lastEntryDate + Utils.STATS_PERIOD_SEC * 1000 < requestDate) {
-                Utils.appendZeroEntry(lastEntryDate + Utils.STATS_PERIOD_SEC * 1000, timezoneDiff, builder);
-                //append an entry for the current date
-                Utils.appendZeroEntry(requestDate, timezoneDiff, builder);
-            }
-        } else {
-            Utils.appendZeroEntry(requestDate, timezoneDiff, builder);
-        }
-
-        return builder.toString();
-    }
-
-    /**
-     * Aggregates statistics by the given key. Sums presences and messages and finds max for connections.
-     *
-     * @param appStats
-     * @return
-     */
-    public static List<Long> aggregateResults(FindIterable<Document> appStats) {
-        List<Long> aggregationResults = new ArrayList<>(keysToParse.size() - 1);
-        Iterator<Document> appStatsIterator = appStats.iterator();
-        Document entry;
-        long temp;
-
-        //fill the results list 0s
-        for (int i = 0; i < keysToParse.size() - 1; i++) {
-            aggregationResults.add((long) 0);
-        }
-        //fill it with actual data
-        while (appStatsIterator.hasNext()) {
-            entry = appStatsIterator.next();
-
-            for (int i = 1; i < keysToParse.size(); i++) {
-                String key = keysToParse.get(i);
-                Object metric = entry.get(key);
-
-                if (metric != null) {
-                    if (key.equals(CONNECTIONS_METRIC) || key.equals(UNIQUE_CONNECTIONS_METRIC)) {
-                        temp = ((Number) metric).longValue();
-                        if (temp > aggregationResults.get(i - 1)) {
-                            aggregationResults.set(i - 1, temp);
-                        }
-                    } else {
-                        aggregationResults.set(i - 1, aggregationResults.get(i - 1) + (long) Math.ceil(((double) metric * Utils.STATS_PERIOD_SEC)));
-                    }
-                }
-            }
-        }
-
-        return aggregationResults;
-    }
-
-    private static void appendEntry(Document entry, int timezoneDiff, StringBuilder builder) {
-        Object temp;
-
-        //parse date
-        builder.append(Utils.DATE_FORMAT.format(((Date) entry.get(keysToParse.get(0))).getTime() + timezoneDiff * 60 * 1000));
-        builder.append(",");
-        //parse everything else
-        for (int i = 1; i < keysToParse.size() - 1; i++) {
-            temp = entry.get(keysToParse.get(i));
-            if (temp == null) {
-                builder.append(0);
-            } else {
-                builder.append(entry.get(keysToParse.get(i)));
-            }
-            builder.append(",");
-        }
-        builder.append(entry.get(keysToParse.get(keysToParse.size() - 1)));
-        builder.append("\n");
-    }
-
-    private static void appendZeroEntry(long entryDate, int timezoneDiff, StringBuilder builder) {
-        builder.append(Utils.DATE_FORMAT.format(entryDate + timezoneDiff * 60 * 1000));
-        builder.append(",");
-        //parse everything else
-        for (int i = 1; i < keysToParse.size() - 1; i++) {
-            builder.append(0);
-            builder.append(",");
-        }
-        builder.append(0);
-        builder.append("\n");
+    public static Map<String, Object> aggregateResults(AggregateIterable<Document> aggrStats) {
+        return aggrStats.first();
     }
 
     public static List<String> appsToList(AggregateIterable<Document> aggregateResult) {
@@ -314,4 +195,6 @@ public class Utils {
     public static List<String> getLegendAbbreviations() {
         return legendAbbreviations;
     }
+
+    public static Map<String, String> getAggregationMethodsForKey() { return aggregationMethodsForKey; }
 }

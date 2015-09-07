@@ -1,6 +1,7 @@
 package controllers;
 
 import com.google.inject.Inject;
+import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.FindIterable;
 import controllers.utils.FileUtil;
 import controllers.utils.Utils;
@@ -12,7 +13,7 @@ import play.mvc.Controller;
 import play.mvc.Result;
 
 import java.util.Arrays;
-import java.util.List;
+import java.util.Map;
 
 public class Application extends Controller {
     public static final long HOUR = 60 * 60 * 1000;
@@ -35,13 +36,21 @@ public class Application extends Controller {
      * @throws Exception
      */
     public Result index() throws Exception {
+        long timestamp = System.currentTimeMillis();
+        long timePassed = timestamp;
+
         String sessionId = Utils.getSessionId(session());
         String appId = session(Utils.APP_ID_KEY);
         String timeLength = session("timeLength");
         long requestDate = System.currentTimeMillis();
         long timeLengthValue;
         int timezoneOffset;
-        List<Long> aggrResults = null;
+        Map<String, Object> aggrResults = null;
+        AggregateIterable<Document> fetchedApps = dataFetcher.fetchApps();
+        FindIterable<Document> fetchedStats = null;
+
+        //store request time
+        session("requestDate", String.valueOf(requestDate));
 
         //check the data
         try {
@@ -54,36 +63,40 @@ public class Application extends Controller {
             session("timeLengthValue", "1");
             session("timezoneOffset", "0");
         }
+
         if (appId == null || timeLength == null || timeLength.length() == 0 || timeLengthValue <= 0 || appId.length() == 0) {
             //if the given parameters are not valid -> erase the contents of the CSV dataset for the corresponding session
             fileUtil.eraseDatafileContent(sessionId);
         } else {
             //calculate the required time length period
-            long startingFrom = 0;
+            long requestedTimePeriod = 0;
             switch (timeLength) {
                 case "hour":
-                    startingFrom = Application.HOUR * timeLengthValue;
+                    requestedTimePeriod = Application.HOUR * timeLengthValue;
                     break;
                 case "day":
-                    startingFrom = Application.DAY * timeLengthValue;
+                    requestedTimePeriod = Application.DAY * timeLengthValue;
                     break;
                 case "month":
-                    startingFrom = Application.MONTH * timeLengthValue;
+                    requestedTimePeriod = Application.MONTH * timeLengthValue;
                     break;
             }
-            //write statistics to file
-            FindIterable<Document> stats = dataFetcher.fetchStats(appId, startingFrom, requestDate);
-            String statsCsvString = Utils.statsToStringCsv(stats, startingFrom, timezoneOffset, requestDate);
-            fileUtil.writeDataToFile(statsCsvString, sessionId);
 
-            //aggregate the results
+            session("requestedTimePeriod", String.valueOf(requestedTimePeriod));
+
+            //write statistics to file
+            fetchedStats = dataFetcher.fetchStats(appId, requestedTimePeriod, requestDate);
+
+            //get aggregated stats
             if (session("aggregateResults") != null) {
-                aggrResults = Utils.aggregateResults(stats);
+                aggrResults = Utils.aggregateResults(dataFetcher.aggregateStats(appId, requestedTimePeriod, requestDate));
             }
         }
 
-        return ok(views.html.index.render(dataFetcher.fetchApps(), Arrays.asList("hour", "day", "month"),
-                Utils.getLegendLabels(), aggrResults, session(), Utils.getLegendAbbreviations(), Utils.STATS_PERIOD_SEC));
+
+        System.out.println("OVERALL TIME : " + (System.currentTimeMillis() - timePassed));
+        return ok(views.html.index.render(Utils.appsToList(fetchedApps), Arrays.asList("hour", "day", "month"),
+                Utils.getLegendLabels(), aggrResults, session(), Utils.getLegendAbbreviations(), Utils.STATS_PERIOD_SEC, Utils.getAggregationMethodsForKey(), fetchedStats));
     }
 
     /**

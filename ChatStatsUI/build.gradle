@@ -19,7 +19,8 @@ repositories {
 dependencies {
     play "org.mongodb:mongo-java-driver:3.0.1",
             "com.typesafe.play:play_2.11:2.4.0",
-            "com.typesafe.play:play-java_2.11:2.4.0"
+            "com.typesafe.play:play-java_2.11:2.4.0",
+            'com.google.inject:guice:4.0'
 }
 
 model {

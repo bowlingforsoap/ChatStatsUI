@@ -15,16 +15,16 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
+import com.mongodb.client.model.Projections;
 import controllers.utils.Utils;
 import org.bson.Document;
+import org.bson.types.ObjectId;
 import play.Logger;
 import play.inject.ApplicationLifecycle;
 import play.libs.F;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * Performs operations with data in MongoDB and manages MongoClient connection.
@@ -102,19 +102,18 @@ public class DataFetcher {
 
         //find all apps with the given appId, where 'created_at' field is greater than new Date(System.currentTimeMillis() - startingFrom))
         FindIterable<Document> stats = statistics.find(new BasicDBObject(Utils.APP_ID_KEY, appId)
-                .append(Utils.CREATED_AT_KEY, new BasicDBObject("$gte", new Date(requestDate - startingFrom))))
-                .sort(new BasicDBObject(Utils.CREATED_AT_KEY, 1));
+                .append(Utils.CREATED_AT_KEY, new BasicDBObject("$gte", /*new Date(*/requestDate - startingFrom/*)*/)))
+                .projection(new BasicDBObject("_id", 0).append(Utils.APP_ID_KEY, 0)).sort(new BasicDBObject(Utils.CREATED_AT_KEY, 1));
 
         return stats;
     }
-
 
     /**
      * Fetches all apps from DB. Uses aggregation.
      *
      * @return
      */
-    public List<String> fetchApps() {
+    public AggregateIterable<Document> fetchApps() {
         MongoDatabase adminChat;
         MongoCollection<Document> statistics;
 
@@ -126,10 +125,33 @@ public class DataFetcher {
             return null;
         }
 
-        AggregateIterable<Document> apps = statistics.aggregate(Arrays.asList(
+        return statistics.aggregate(Arrays.asList(
                 new BasicDBObject("$project", new BasicDBObject(Utils.APP_ID_KEY, 1).append("_id", 0)),
                 new BasicDBObject("$group", new BasicDBObject("_id", "$" + Utils.APP_ID_KEY))));
-        return Utils.appsToList(apps);
+
+    }
+
+    public AggregateIterable<Document> aggregateStats(String appId, long startingFrom, long requestDate) {
+        MongoDatabase adminChat;
+        MongoCollection<Document> statistics;
+
+        try {
+            adminChat = getDB();
+            statistics = getCollection(adminChat);
+        } catch (Exception e) {
+            Logger.error("Error accessing database : " + e.toString());
+            return null;
+        }
+
+        BasicDBObject groupBody = new BasicDBObject("_id", null);
+
+        for (Map.Entry<String, String> entry : Utils.getAggregationMethodsForKey().entrySet()) {
+            groupBody.append(entry.getKey(), new BasicDBObject("$" + entry.getValue(), "$" + entry.getKey()));
+        }
+
+        return statistics.aggregate(Arrays.asList(new BasicDBObject("$match",
+                        new BasicDBObject(Utils.CREATED_AT_KEY, new BasicDBObject("$gte", requestDate - startingFrom)).append(Utils.APP_ID_KEY, appId)),
+                new BasicDBObject("$group", groupBody)));
     }
 
     private MongoCollection<Document> getCollection(MongoDatabase adminChat) {
@@ -142,8 +164,8 @@ public class DataFetcher {
 
     //TODO: REMOVE
     //in case you need to generate some data
-    /*public void insertData(int n) {
-        MongoDatabase adminChat = instance.client.getDatabase(DEFAULT_STATS_DB);
+    public void insertData(int n) {
+        MongoDatabase adminChat = client.getDatabase(DEFAULT_STATS_DB);
         MongoCollection<Document> statistics = adminChat.getCollection(DEFAULT_STATS_COLL);
         Random randGenerator = new Random();
         List<Document> docs = new ArrayList<>(n);
@@ -159,7 +181,7 @@ public class DataFetcher {
                 for (int i = 0; i < n; i++) {
                     doc = new Document();
                     doc.put("_id", new ObjectId());
-                    doc.put(Utils.CREATED_AT_KEY, new Date(System.currentTimeMillis() - timeLenght * randGenerator.nextInt(100) / 100));
+                    doc.put(Utils.CREATED_AT_KEY, System.currentTimeMillis() - timeLenght * randGenerator.nextInt(100) / 100);
                     doc.put(Utils.APP_ID_KEY, app);
                     for (int i1 = 1; i1 < Utils.getKeysToParse().size(); i1++) {
                         String key = Utils.getKeysToParse().get(i1);
@@ -174,5 +196,5 @@ public class DataFetcher {
             }
         }
         statistics.insertMany(docs);
-    }*/
+    }
 }

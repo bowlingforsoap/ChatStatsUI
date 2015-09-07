@@ -1,6 +1,7 @@
 @(appsFromDB: java.util.List[java.lang.String], timeLengths: java.util.List[java.lang.String],
-        keysToParse: java.util.List[java.lang.String], aggrResults: java.util.List[java.lang.Long], session: play.mvc.Http.Session, abbreviations : java.util.List[java.lang.String],
-        statsCollectionPeriod : java.lang.Integer)
+        keysToParse: java.util.List[java.lang.String], aggrResults: java.util.Map[java.lang.String, java.lang.Object],
+        session: play.mvc.Http.Session, abbreviations : java.util.List[java.lang.String], statsCollectionPeriod : java.lang.Integer,
+        aggregationMethodsForKey : java.util.Map[String, String], fetchedStats : com.mongodb.client.FindIterable[org.bson.Document])
 
 <!DOCTYPE html>
 
@@ -22,12 +23,17 @@
                     <table class="center"><tr class="top"><td><h1>UPDATE SETTINGS</h1></td></tr></table>
                     <hr>
                     <table id="updatetable">
-                        <tr><td>
-                        Application id :</td><td><select name="appId" required="required" class="select-style" id="appId">
-                            @for(app <- appsFromDB) {
-                                <option>@app</option>
+                        <tr><td>Application id :</td>
+                            @if(appsFromDB!=null){
+                                <td><select name="appId" required="required" class="select-style" id="appId">
+                                @for(app <- appsFromDB) {
+                                    <option>@app</option>
+                                }
+                                </select></td>
+                            }else{
+                                <td><input name="appId" required="required" id="appId" placeholder="no apps found"/></td>
                             }
-                        </select></td></tr>
+                        </tr>
                         <tr><td>
                         Time length :</td><td><input id="timeLengthValue" required="required" name="timeLengthValue" onclick="dropTextFieldValue()" placeholder="Insert an integer value here" type="number"/>
                         </td></tr>
@@ -48,15 +54,12 @@
                     <hr>
                     <tr class="top"><td><h1>AGGR. RESULTS</h1></td></tr>
                 }
-
                 <!-- Aggegated results -->
                 </table>
                 @if(aggrResults != null && aggrResults.size() > 0){
                     <hr>
                 <table id="aggregateresults" class="settings">
-                    @for(i <- 0 to aggrResults.size - 1){
-                        <tr class="@abbreviations.get(i + 1)_@i" title="@keysToParse.get(i + 1)"><td>@abbreviations.get(i + 1) : </td><td>@aggrResults.get(i)</td></tr>
-                    }
+                    @for(entry : java.util.Map.Entry[java.lang.String, java.lang.String] <- aggregationMethodsForKey.entrySet()){<tr><td>@entry.getKey @entry.getValue() : </td><td>@aggrResults.get(entry.getKey()).asInstanceOf[Number].longValue</td></tr>}
                 </table>
                     }
             </div>
@@ -70,18 +73,18 @@
         <div class="site-wrap">
             <div id="headerdiv">
                 <table id="headertable">
-                    <tr>
-                        <td align="center">
-                            <span>Application Id :
-                                @if(session.get("appId")!=null){
-                                    @session.get("appId")
-                                }else{
-                                    -----
-                                }</span>
-                            <span>Time Length : @session.get("timeLengthValue") @session.get("timeLength") (s)</span>
-                            <span>Unit : @statsCollectionPeriod sec.</span>
-                        </td>
-                    </tr>
+        <tr>
+            <td align="center">
+                <span>Application Id :
+                    @if(session.get("appId")!=null){
+                        @session.get("appId")
+                    }else{
+                        -----
+                }</span>
+                <span>Time Length : @session.get("timeLengthValue") @session.get("timeLength") (s)</span>
+                <span>Unit : @statsCollectionPeriod sec.</span>
+            </td>
+        </tr>
                 </table>
             </div>
 
@@ -91,9 +94,56 @@
 
             <!-- graph initialization -->
             <script type="text/javascript">
-                  var labelsList = '@keysToParse';
-                  var dataset = '/resources/dataset@session.get("id")';
-                  dataset += ".csv";
+                  var labelsList = [];
+                  @for(key <- keysToParse){labelsList.push('@key');}
+
+                  /*var dataset = '/resources/dataset@session.get("id")';
+                  dataset += ".csv";*/
+                  console.log("requestDate : " + @session.get("requestDate"))
+                  console.log("requestedTimePeriod : " + @session.get("requestedTimePeriod"))
+
+                  var requestedTimePeriod = new Date(@session.get("requestDate") - @session.get("requestedTimePeriod"));
+                  var firstEntryDate = new Date(@fetchedStats.first().get("createdAt"));
+                  var lastEntryDate = new Date(@fetchedStats.last.get("createdAt"));
+                  var currentDate = new Date();
+                  var zeroEntry = [];
+                  var dataset = [];
+
+                  @for(metric <- aggregationMethodsForKey.keySet()){zeroEntry.push(0);}
+
+                  zeroEntry.unshift(requestedTimePeriod);
+                  dataset.push(zeroEntry.slice());
+                  console.log("requestedTimePeriod : " + zeroEntry);
+                  console.log("firstEntryDate size : " + zeroEntry.length);
+
+
+                  zeroEntry.shift();
+                  zeroEntry.unshift(firstEntryDate);
+                  dataset.push(zeroEntry.slice());
+                  console.log("firstEntryDate : " + zeroEntry);
+                  console.log("firstEntryDate size : " + zeroEntry.length);
+
+                  console.log(dataset[0]);
+                  console.log(dataset[1]);
+
+                  @for(doc : org.bson.Document <- fetchedStats) {dataset.push([@for(entry : java.util.Map.Entry[String, Object] <- doc.entrySet()) {@if(entry.getKey == "createdAt") {new Date(@entry.getValue),}else{@entry.getValue,}}]);}
+
+                  zeroEntry.shift();
+                  zeroEntry.unshift(lastEntryDate);
+                  dataset.push(zeroEntry.slice());
+                  console.log("lastEntryDate : " + zeroEntry);
+                  console.log("firstEntryDate size : " + zeroEntry.length);
+
+
+                  zeroEntry.shift();
+                  zeroEntry.unshift(currentDate);
+                  dataset.push(zeroEntry);
+                  console.log("currentDate : " + zeroEntry);
+                  console.log("firstEntryDate size : " + zeroEntry.length);
+
+                  console.log(dataset.length);
+                  console.log(dataset);
+
                   @if(session.get("appId")){
                     var appId = "@session.get("appId")";
                   }else{
@@ -106,11 +156,7 @@
                   }
                   var visibilityList = [];
 
-                  labelsList = labelsList.replace('[','');
-                  labelsList = labelsList.replace(']','');
-                  labelsList = labelsList.split(',');
                   for (i = 0; i < labelsList.length; i++) {
-                    labelsList[i] = labelsList[i].trim();
                     visibilityList.push(true);
                   }
 
@@ -136,28 +182,24 @@
                   }
 
                   //executed when graph is ready (loaded)
+                  //set colors
                   g.ready(function() {
-                    var abbreviationsArray = "@abbreviations";
                     var plotColors = g.getColors();
-
-                    abbreviationsArray = abbreviationsArray.replace('[','');
-                    abbreviationsArray = abbreviationsArray.replace(']','');
-                    abbreviationsArray = abbreviationsArray.split(',');
-                    for (i = 0; i < abbreviationsArray.length; i++) {
-                        abbreviationsArray[i] = abbreviationsArray[i].trim();
+                    var abbreviationsArray = [];
+                    @for(abbr <- abbreviations) {
+                        abbreviationsArray.push('@abbr');
                     }
 
                     for (var j = 1; j < abbreviationsArray.length; j++) {
-                        var elements = document.getElementsByClassName(abbreviationsArray[j] + "_" + (j - 1));
+                        var dockerElements = document.getElementsByClassName(abbreviationsArray[j] + "_" + (j - 1));
 
-                        for (var i = 0; i < elements.length; i++){
+                        for (var i = 0; i < dockerElements.length; i++){
                             try {
-                                elements[i].style.color = plotColors[j - 1];
+                                dockerElements[i].style.color = plotColors[j - 1];
                             } catch (err) {}
                         }
                     }
-                    //TODO: set colors
-                  })
+                  });
 
                   //saves settings from the previous update and cleans the session
                   function setData() {
