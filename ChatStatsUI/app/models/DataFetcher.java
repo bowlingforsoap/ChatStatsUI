@@ -134,6 +134,7 @@ public class DataFetcher {
     public AggregateIterable<Document> aggregateStats(String appId, long startingFrom, long requestDate) {
         MongoDatabase adminChat;
         MongoCollection<Document> statistics;
+        BasicDBObject groupBody;
 
         try {
             adminChat = getDB();
@@ -143,10 +144,9 @@ public class DataFetcher {
             return null;
         }
 
-        BasicDBObject groupBody = new BasicDBObject("_id", null);
-
-        for (Map.Entry<String, String> entry : Utils.getAggregationMethodsForKey().entrySet()) {
-            groupBody.append(entry.getKey(), new BasicDBObject("$" + entry.getValue(), "$" + entry.getKey()));
+        groupBody = new BasicDBObject("_id", null);
+        for (String key : Utils.KEYS_TO_PARSE) {
+            groupBody.append(key, new BasicDBObject("$" + Utils.getAggrMethodsMap().get(key), "$" + key));
         }
 
         return statistics.aggregate(Arrays.asList(new BasicDBObject("$match",
@@ -160,41 +160,5 @@ public class DataFetcher {
 
     private MongoDatabase getDB() {
         return client.getDatabase(db);
-    }
-
-    //TODO: REMOVE
-    //in case you need to generate some data
-    public void insertData(int n) {
-        MongoDatabase adminChat = client.getDatabase(DEFAULT_STATS_DB);
-        MongoCollection<Document> statistics = adminChat.getCollection(DEFAULT_STATS_COLL);
-        Random randGenerator = new Random();
-        List<Document> docs = new ArrayList<>(n);
-        long hour = 1000 * 60 * 60;
-        long day = 24 * hour;
-        long month = 31 * day;
-        long[] timeLengths = {hour, day, month};
-        String[] apps = {"13065", "13066", "666"};
-        Document doc;
-
-        for (String app : apps) {
-            for (long timeLenght : timeLengths) {
-                for (int i = 0; i < n; i++) {
-                    doc = new Document();
-                    doc.put("_id", new ObjectId());
-                    doc.put(Utils.CREATED_AT_KEY, System.currentTimeMillis() - timeLenght * randGenerator.nextInt(100) / 100);
-                    doc.put(Utils.APP_ID_KEY, app);
-                    for (int i1 = 1; i1 < Utils.getKeysToParse().size(); i1++) {
-                        String key = Utils.getKeysToParse().get(i1);
-                        if (key.equals(Utils.CONNECTIONS_METRIC) || key.equals(Utils.UNIQUE_CONNECTIONS_METRIC)) {
-                            doc.put(key, new Long(randGenerator.nextInt(1000)));
-                        } else {
-                            doc.put(key, randGenerator.nextDouble() * 10000);
-                        }
-                    }
-                    docs.add(doc);
-                }
-            }
-        }
-        statistics.insertMany(docs);
     }
 }

@@ -18,37 +18,46 @@ import java.util.*;
  * Created by Strelchenko Vadym on 29.05.15.
  */
 public class Utils {
-    /**
-     * Format expected in dygraphs js.
-     */
-    public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-    public static final Integer STATS_PERIOD_SEC; //default
+    public static final Integer STATS_PERIOD_SEC;
     public static final String CHAT_HOME;
     static {
         CHAT_HOME = Play.application().configuration().getString("chat_home");
     }
+
     /**
-     * Fields from db to work with. The first one will become the X-axis.
+     * Keys in db object.
      */
-    private static List<String> keysToParse = new ArrayList<>();
-    private static List<String> legendLabels = new ArrayList<>();
-    private static List<String> legendAbbreviations = new ArrayList<>();
-    public static Map<String, String> aggregationMethodsForKey = new HashMap<>();
+    public static final String[] KEYS_TO_PARSE;
+
     /**
-     * Keys - legend labels; values - abbreviations for the bottom docker and left aggregation menu
+     * Names for dygraph labels.
      */
-    private static Map<String, String> legendLabelsAndAbbreviations = new HashMap<>();
+    private static Map<String, String> legendLabelsMap = new HashMap<>();
+    /**
+     * Methods to use during an aggregation for certain keys.
+     */
+    private static Map<String, String> aggrMethodsMap = new HashMap<>();
+    /**
+     * Abbreviations for the bottom docker.
+     */
+    private static Map<String, String> abbreviationsMap = new HashMap<>();
+
     /**
      * Statistics db.
      */
     public static final String CHAT_STATS_DB_URI;
     public static final String CHAT_STATS_DB_URI_KEY = "--QB_MONGODB_CHAT_STATS_DB_URI";
 
+    //custom metrics (not in init.properties)
     public static final String CONNECTIONS_METRIC = "connections";
     public static final String UNIQUE_CONNECTIONS_METRIC = "uniqueConnections";
 
+    /**
+     * Regex to split camel style words.
+     */
     private static final String CAMEL_STYLE_SPLIT_REGEX = "(?<!(^|[A-Z]))(?=[A-Z])|(?<!^)(?=[A-Z][a-z])";
 
+    //Keys in db object
     public static final String CREATED_AT_KEY = "createdAt";
     public static final String APP_ID_KEY = "appId";
 
@@ -61,11 +70,7 @@ public class Utils {
         int period = 5; // default value
         String chatStatsDbUri = null;
         String[] metricNameWords;
-
-        keysToParse.add(CREATED_AT_KEY);
-        legendLabels.add(CREATED_AT_KEY);
-        metricNameWords = CREATED_AT_KEY.split(CAMEL_STYLE_SPLIT_REGEX);
-        legendAbbreviations.add(abbreviationStringForMetric(metricNameWords, false));
+        List<String> keysToParseList = new ArrayList<>();
 
         try {
 
@@ -74,9 +79,11 @@ public class Utils {
 
             //parse KEYS_TO_PARSE
             statisticsMetrics = props.getProperty("--QB_CHAT_STATISTICS_METRICS").split(",");
+
             //parse STATS_PERIOD_SEC
             period = Integer.valueOf(props.getProperty("stats/stats-archiv/stats-per-logger/timeout"));
             Logger.info("Statistics period set to : " + period);
+
             //parse --QB_MONGODB_CHAT_STATS_DB_URI
             chatStatsDbUri = props.getProperty(CHAT_STATS_DB_URI_KEY);
             Logger.info("Chat statistics db uri set to : " + chatStatsDbUri);
@@ -100,16 +107,17 @@ public class Utils {
             }
         }
 
-        //prepare KEYS_TO_PARSE, LEGEND_LABELS and LEGEND_ABBREVIATIONS
+        //prepare KEYS_TO_PARSE
         try {
             for (String metric : statisticsMetrics) {
-                aggregationMethodsForKey.put(metric, "sum");
-                legendLabels.add(metric + "PerUnit");
-                //separate metric by words
+                keysToParseList.add(metric);
+                legendLabelsMap.put(metric, metric + "PerUnit");
+                aggrMethodsMap.put(metric, "sum");
+
                 metricNameWords = metric.split(CAMEL_STYLE_SPLIT_REGEX);
-                legendAbbreviations.add(abbreviationStringForMetric(metricNameWords, true));
+                abbreviationsMap.put(metric, abbreviationStringForMetric(metricNameWords, true));
             }
-            keysToParse.addAll(Arrays.asList(statisticsMetrics));
+
         } catch (NullPointerException e) {
             Logger.error("NullPointerException while parsing metrics");
             e.printStackTrace(System.out);
@@ -118,25 +126,26 @@ public class Utils {
 
         //custom metrics
         //
-        aggregationMethodsForKey.put(CONNECTIONS_METRIC, "max");
-        keysToParse.add(CONNECTIONS_METRIC);
-        legendLabels.add(CONNECTIONS_METRIC);
+        keysToParseList.add(CONNECTIONS_METRIC);
+        legendLabelsMap.put(CONNECTIONS_METRIC, CONNECTIONS_METRIC);
+        aggrMethodsMap.put(CONNECTIONS_METRIC, "max");
         metricNameWords = CONNECTIONS_METRIC.split(CAMEL_STYLE_SPLIT_REGEX);
-        legendAbbreviations.add(abbreviationStringForMetric(metricNameWords, false));
+        abbreviationsMap.put(CONNECTIONS_METRIC, abbreviationStringForMetric(metricNameWords, false));
 
-        aggregationMethodsForKey.put(UNIQUE_CONNECTIONS_METRIC, "max");
-        keysToParse.add(UNIQUE_CONNECTIONS_METRIC);
-        legendLabels.add(UNIQUE_CONNECTIONS_METRIC);
+        keysToParseList.add(UNIQUE_CONNECTIONS_METRIC);
+        legendLabelsMap.put(UNIQUE_CONNECTIONS_METRIC, UNIQUE_CONNECTIONS_METRIC);
+        aggrMethodsMap.put(UNIQUE_CONNECTIONS_METRIC, "max");
         metricNameWords = UNIQUE_CONNECTIONS_METRIC.split(CAMEL_STYLE_SPLIT_REGEX);
-        legendAbbreviations.add(abbreviationStringForMetric(metricNameWords, false));
-
-        Logger.info(aggregationMethodsForKey.toString());
+        abbreviationsMap.put(UNIQUE_CONNECTIONS_METRIC, abbreviationStringForMetric(metricNameWords, false));
 
         //set STATS_PERIOD_SEC
         STATS_PERIOD_SEC = period;
 
         //set QB_MONGODB_CHAT_STATS_DB_URI
         CHAT_STATS_DB_URI = chatStatsDbUri;
+
+        //set KEYS_TO_PARSE
+        KEYS_TO_PARSE = keysToParseList.toArray(new String[keysToParseList.size()]);
     }
 
     /**
@@ -157,7 +166,17 @@ public class Utils {
     }
 
     public static Map<String, Object> aggregateResults(AggregateIterable<Document> aggrStats) {
-        return aggrStats.first();
+        Map<String, Object> result = null;
+
+        try {
+            result = aggrStats.first();
+        } finally {
+            if (result == null) {
+                result = new HashMap<>();
+            }
+        }
+
+        return result;
     }
 
     public static List<String> appsToList(AggregateIterable<Document> aggregateResult) {
@@ -169,7 +188,13 @@ public class Utils {
         return appsFromDB;
     }
 
-
+    /**
+     * Returns appropriate abbreviations (aka clamped first letters) for each object in {@code metricSeparateWords}.
+     *
+     * @param metricSeparateWords
+     * @param perUnit
+     * @return
+     */
     private static String abbreviationStringForMetric(String[] metricSeparateWords, boolean perUnit) {
         StringBuilder sb = new StringBuilder();
 
@@ -184,17 +209,15 @@ public class Utils {
         return sb.toString().toUpperCase();
     }
 
-    public static List<String> getKeysToParse() {
-        return keysToParse;
+    public static Map<String, String> getLegendLabelsMap() {
+        return legendLabelsMap;
     }
 
-    public static List<String> getLegendLabels() {
-        return legendLabels;
+    public static Map<String, String> getAggrMethodsMap() {
+        return aggrMethodsMap;
     }
 
-    public static List<String> getLegendAbbreviations() {
-        return legendAbbreviations;
+    public static Map<String, String> getAbbreviationsMap() {
+        return abbreviationsMap;
     }
-
-    public static Map<String, String> getAggregationMethodsForKey() { return aggregationMethodsForKey; }
 }

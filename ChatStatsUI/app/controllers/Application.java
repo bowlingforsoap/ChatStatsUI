@@ -20,6 +20,8 @@ public class Application extends Controller {
     public static final long DAY = 24 * HOUR;
     public static final long MONTH = 31 * DAY;
 
+    public static final String[] TIME_LENGTHS = {"hour", "day", "month"};
+
     private final DataFetcher dataFetcher;
     private final FileUtil fileUtil;
 
@@ -36,9 +38,6 @@ public class Application extends Controller {
      * @throws Exception
      */
     public Result index() throws Exception {
-        long timestamp = System.currentTimeMillis();
-        long timePassed = timestamp;
-
         String sessionId = Utils.getSessionId(session());
         String appId = session(Utils.APP_ID_KEY);
         String timeLength = session("timeLength");
@@ -60,8 +59,8 @@ public class Application extends Controller {
             // default values
             timeLengthValue = 1;
             timezoneOffset = 0;
-            session("timeLengthValue", "1");
-            session("timezoneOffset", "0");
+            session("timeLengthValue", String.valueOf(timeLengthValue));
+            session("timezoneOffset", String.valueOf(timezoneOffset));
         }
 
         if (appId == null || timeLength == null || timeLength.length() == 0 || timeLengthValue <= 0 || appId.length() == 0) {
@@ -82,6 +81,7 @@ public class Application extends Controller {
                     break;
             }
 
+            //store the required period in the session object
             session("requestedTimePeriod", String.valueOf(requestedTimePeriod));
 
             //write statistics to file
@@ -93,10 +93,10 @@ public class Application extends Controller {
             }
         }
 
-
-        System.out.println("OVERALL TIME : " + (System.currentTimeMillis() - timePassed));
-        return ok(views.html.index.render(Utils.appsToList(fetchedApps), Arrays.asList("hour", "day", "month"),
-                Utils.getLegendLabels(), aggrResults, session(), Utils.getLegendAbbreviations(), Utils.STATS_PERIOD_SEC, Utils.getAggregationMethodsForKey(), fetchedStats));
+        return ok(views.html.index.render(Utils.appsToList(fetchedApps),
+                aggrResults,
+                session(),
+                fetchedStats));
     }
 
     /**

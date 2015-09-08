@@ -24,13 +24,6 @@ public class ErrorHandler extends DefaultHttpErrorHandler {
         super(configuration, environment, optionalSourceMapper, provider);
     }
 
-    /*@Override
-    public F.Promise<Result> onClientError(Http.RequestHeader requestHeader, int i, String s) {
-        System.out.println("ErrorHandler.onClientError : requestHeader = [" + requestHeader + "], i = [" + i + "], s = [" + s + "]");
-        Application.session().clear();
-        return super.onClientError(requestHeader, i, s);
-    }*/
-
     @Override
     public F.Promise<Result> onServerError(Http.RequestHeader requestHeader, Throwable throwable) {
         Logger.error("Server Error : requestHeader = [" + requestHeader + "], throwable = [" + throwable + "]");

@@ -1,8 +1,7 @@
-@(appsFromDB: java.util.List[java.lang.String], timeLengths: java.util.List[java.lang.String],
-        keysToParse: java.util.List[java.lang.String], aggrResults: java.util.Map[java.lang.String, java.lang.Object],
-        session: play.mvc.Http.Session, abbreviations : java.util.List[java.lang.String], statsCollectionPeriod : java.lang.Integer,
-        aggregationMethodsForKey : java.util.Map[String, String], fetchedStats : com.mongodb.client.FindIterable[org.bson.Document])
-
+@(appsFromDB: java.util.List[java.lang.String],
+        aggrResults: java.util.Map[java.lang.String, java.lang.Object],
+        session: play.mvc.Http.Session, fetchedStats : com.mongodb.client.FindIterable[org.bson.Document])
+@import controllers.utils.Utils;
 <!DOCTYPE html>
 
 <html lang="en">
@@ -38,7 +37,7 @@
                         Time length :</td><td><input id="timeLengthValue" required="required" name="timeLengthValue" onclick="dropTextFieldValue()" placeholder="Insert an integer value here" type="number"/>
                         </td></tr>
                         <tr><td></td><td><select name="timeLength" required="required" class="select-style" id="timeLength">
-                            @for(timeLength <- timeLengths) {
+                            @for(timeLength <- controllers.Application.TIME_LENGTHS) {
                                 <option>@timeLength</option>
                             }
                         </select></td></tr>
@@ -59,7 +58,7 @@
                 @if(aggrResults != null && aggrResults.size() > 0){
                     <hr>
                 <table id="aggregateresults" class="settings">
-                    @for(entry : java.util.Map.Entry[java.lang.String, java.lang.String] <- aggregationMethodsForKey.entrySet()){<tr><td>@entry.getKey @entry.getValue() : </td><td>@aggrResults.get(entry.getKey()).asInstanceOf[Number].longValue</td></tr>}
+                    @for(key <- Utils.KEYS_TO_PARSE){<tr class="@key"><td>@key @Utils.getAggrMethodsMap.get(key) : </td><td>@aggrResults.get(key).asInstanceOf[Number].longValue</td></tr>}
                 </table>
                     }
             </div>
@@ -82,7 +81,7 @@
                         -----
                 }</span>
                 <span>Time Length : @session.get("timeLengthValue") @session.get("timeLength") (s)</span>
-                <span>Unit : @statsCollectionPeriod sec.</span>
+                <span>Unit : @Utils.STATS_PERIOD_SEC sec.</span>
             </td>
         </tr>
                 </table>
@@ -95,54 +94,51 @@
             <!-- graph initialization -->
             <script type="text/javascript">
                   var labelsList = [];
-                  @for(key <- keysToParse){labelsList.push('@key');}
-
-                  /*var dataset = '/resources/dataset@session.get("id")';
-                  dataset += ".csv";*/
-                  console.log("requestDate : " + @session.get("requestDate"))
-                  console.log("requestedTimePeriod : " + @session.get("requestedTimePeriod"))
+                  labelsList.push('@Utils.CREATED_AT_KEY');
+                  @for(key <- Utils.KEYS_TO_PARSE){labelsList.push('@Utils.getLegendLabelsMap.get(key)');}
 
                   var requestedTimePeriod = new Date(@session.get("requestDate") - @session.get("requestedTimePeriod"));
-                  var firstEntryDate = new Date(@fetchedStats.first().get("createdAt"));
-                  var lastEntryDate = new Date(@fetchedStats.last.get("createdAt"));
+
+                  var firstEntryDate = null;
+                  var lastEntryDate = null;
+
+                  @if(fetchedStats!=null){
+                    @if(fetchedStats.first()!=null){
+                        firstEntryDate = new Date(@fetchedStats.first().get(Utils.CREATED_AT_KEY));
+                    }
+                    @if(fetchedStats.first() != null && fetchedStats.last!=null){
+                        lastEntryDate = new Date(@fetchedStats.last.get(Utils.CREATED_AT_KEY));
+                    }
+                  }
+
                   var currentDate = new Date();
                   var zeroEntry = [];
                   var dataset = [];
 
-                  @for(metric <- aggregationMethodsForKey.keySet()){zeroEntry.push(0);}
+                  @for(key <- Utils.KEYS_TO_PARSE){zeroEntry.push(0);}
 
                   zeroEntry.unshift(requestedTimePeriod);
                   dataset.push(zeroEntry.slice());
-                  console.log("requestedTimePeriod : " + zeroEntry);
-                  console.log("firstEntryDate size : " + zeroEntry.length);
 
+                  if (firstEntryDate != null) {
+                      zeroEntry.shift();
+                      zeroEntry.unshift(firstEntryDate);
+                      dataset.push(zeroEntry.slice());
+                  }
 
-                  zeroEntry.shift();
-                  zeroEntry.unshift(firstEntryDate);
-                  dataset.push(zeroEntry.slice());
-                  console.log("firstEntryDate : " + zeroEntry);
-                  console.log("firstEntryDate size : " + zeroEntry.length);
+                  @if(fetchedStats != null) {
+                    @for(doc: org.bson.Document <- fetchedStats) {dataset.push([@for(entry: java.util.Map.Entry[String, Object] <- doc.entrySet()) {@if(entry.getKey == Utils.CREATED_AT_KEY) {new Date(@entry.getValue),}else{@entry.getValue,}}]);}
+                  }
 
-                  console.log(dataset[0]);
-                  console.log(dataset[1]);
-
-                  @for(doc : org.bson.Document <- fetchedStats) {dataset.push([@for(entry : java.util.Map.Entry[String, Object] <- doc.entrySet()) {@if(entry.getKey == "createdAt") {new Date(@entry.getValue),}else{@entry.getValue,}}]);}
-
-                  zeroEntry.shift();
-                  zeroEntry.unshift(lastEntryDate);
-                  dataset.push(zeroEntry.slice());
-                  console.log("lastEntryDate : " + zeroEntry);
-                  console.log("firstEntryDate size : " + zeroEntry.length);
-
+                  if (lastEntryDate != null) {
+                      zeroEntry.shift();
+                      zeroEntry.unshift(lastEntryDate);
+                      dataset.push(zeroEntry.slice());
+                  }
 
                   zeroEntry.shift();
                   zeroEntry.unshift(currentDate);
                   dataset.push(zeroEntry);
-                  console.log("currentDate : " + zeroEntry);
-                  console.log("firstEntryDate size : " + zeroEntry.length);
-
-                  console.log(dataset.length);
-                  console.log(dataset);
 
                   @if(session.get("appId")){
                     var appId = "@session.get("appId")";
@@ -185,18 +181,15 @@
                   //set colors
                   g.ready(function() {
                     var plotColors = g.getColors();
-                    var abbreviationsArray = [];
-                    @for(abbr <- abbreviations) {
-                        abbreviationsArray.push('@abbr');
+                    var keysToParse = [];
+                    @for(key <- Utils.KEYS_TO_PARSE){keysToParse.push('@key');
                     }
 
-                    for (var j = 1; j < abbreviationsArray.length; j++) {
-                        var dockerElements = document.getElementsByClassName(abbreviationsArray[j] + "_" + (j - 1));
+                    for (var j = 0; j < keysToParse.length; j++) {
+                        var dockerElements = document.getElementsByClassName(keysToParse[j]);
 
                         for (var i = 0; i < dockerElements.length; i++){
-                            try {
-                                dockerElements[i].style.color = plotColors[j - 1];
-                            } catch (err) {}
+                            dockerElements[i].style.color = plotColors[j];
                         }
                     }
                   });
@@ -206,7 +199,7 @@
                     document.getElementById('appId').value = '@session.get("appId")'
                     @if(session.get("timeLength") == null || session.get("timeLength").length == 0) {
                         //aka: if null -> 'day'
-                        document.getElementById('timeLength').value = '@timeLengths.get(1)'} else {
+                        document.getElementById('timeLength').value = '@controllers.Application.TIME_LENGTHS(0))'} else {
                         document.getElementById('timeLength').value = '@session.get("timeLength")'
                     }
                     document.getElementById('timeLengthValue').value = '@session.get("timeLengthValue")'
@@ -230,9 +223,9 @@
                         <table id="displaytable">
                             <tr>
                                 <td align="center">
-                                    @for(i <- 0 to abbreviations.size - 2){
-                                        <span title="@keysToParse.get(i + 1)" class="@abbreviations.get(i + 1)_@i"><input type="checkbox" id="@i" checked onclick="change(this)">@abbreviations.get(i + 1)</span>
-                                    }
+                                @for(i <- 0 to Utils.KEYS_TO_PARSE.length - 1){
+                                    <span title="@Utils.getLegendLabelsMap.get(Utils.KEYS_TO_PARSE(i))" class="@Utils.KEYS_TO_PARSE(i)"><input type="checkbox" id="@i" checked onclick="change(this)">@Utils.getAbbreviationsMap.get(Utils.KEYS_TO_PARSE(i))</span>
+                                }
                                 </td>
                             </tr>
                         </table>
