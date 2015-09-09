@@ -96,12 +96,15 @@
 
             <!-- graph initialization -->
             <script type="text/javascript">
+                  // form labels for dygraphs from CREATED_AT_KEY and KEYS_TO_PARSE
                   var labelsList = [];
                   labelsList.push('@Utils.CREATED_AT_KEY');
                   @for(key <- Utils.KEYS_TO_PARSE){labelsList.push('@Utils.getLegendLabelsMap.get(key)');}
 
+                  // calculate requested time period
                   var requestedTimePeriod = new Date(@session.get("requestDate") - @session.get("requestedTimePeriod"));
 
+                  // dates of first and last metrics in fetchedStats
                   var firstEntryDate = null;
                   var lastEntryDate = null;
 
@@ -114,34 +117,46 @@
                     }
                   }
 
-                  var currentDate = new Date();
-                  var zeroEntry = [];
+                  //container for dygraphs' data
                   var dataset = [];
+                  var currentDate = new Date();
 
+                  // zero entrues for all metrics to retain normal graph representation
+                  var zeroEntry = [];
                   @for(key <- Utils.KEYS_TO_PARSE){zeroEntry.push(0);}
 
-                  zeroEntry.unshift(requestedTimePeriod);
-                  dataset.push(zeroEntry.slice());
-
-                  if (firstEntryDate != null) {
-                      zeroEntry.shift();
-                      zeroEntry.unshift(firstEntryDate);
+                  //if firstEntryDate is farther from requestedTimePeriod, than controllers.utils.Utils.STATS_PERIOD_SEC
+                  if (firstEntryDate.getTime() - @controllers.utils.Utils.STATS_PERIOD_SEC * 1000 > requestedTimePeriod.getTime()) {
+                      //append a zero entry at the requestedTimePeriod
+                      zeroEntry.unshift(requestedTimePeriod);
                       dataset.push(zeroEntry.slice());
+
+                      //and append a zero entry on firstEntryDate
+                      if (firstEntryDate != null) {
+                          zeroEntry.shift();
+                          zeroEntry.unshift(firstEntryDate);
+                          dataset.push(zeroEntry.slice());
+                      }
                   }
 
                   @if(fetchedStats != null) {
                     @for(doc: org.bson.Document <- fetchedStats) {dataset.push([@for(entry: java.util.Map.Entry[String, Object] <- doc.entrySet()) {@if(entry.getKey == Utils.CREATED_AT_KEY) {new Date(@entry.getValue),}else{@entry.getValue,}}]);}
                   }
 
-                  if (lastEntryDate != null) {
-                      zeroEntry.shift();
-                      zeroEntry.unshift(lastEntryDate);
-                      dataset.push(zeroEntry.slice());
-                  }
+                  //if lastEntryDate is farther from currentDate, than controllers.utils.Utils.STATS_PERIOD_SEC
+                  if (lastEntryDate.getTime() + @controllers.utils.Utils.STATS_PERIOD_SEC * 1000 < currentDate.getTime()) {
+                      //append a zero entry at the lastEntry
+                      if (lastEntryDate != null) {
+                          zeroEntry.shift();
+                          zeroEntry.unshift(lastEntryDate);
+                          dataset.push(zeroEntry.slice());
+                      }
 
-                  zeroEntry.shift();
-                  zeroEntry.unshift(currentDate);
-                  dataset.push(zeroEntry);
+                      //and append a zero entry on currentDate
+                      zeroEntry.shift();
+                      zeroEntry.unshift(currentDate);
+                      dataset.push(zeroEntry);
+                  }
 
                   @if(session.get("appId")){
                     var appId = "@session.get("appId")";
