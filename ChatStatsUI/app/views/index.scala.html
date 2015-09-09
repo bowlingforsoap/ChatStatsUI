@@ -119,7 +119,7 @@
 
                   //container for dygraphs' data
                   var dataset = [];
-                  var currentDate = new Date();
+                  var currentDate = new Date(@session.get("requestDate"));
 
                   // zero entrues for all metrics to retain normal graph representation
                   var zeroEntry = [];
