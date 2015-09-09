@@ -58,7 +58,10 @@
                 @if(aggrResults != null && aggrResults.size() > 0){
                     <hr>
                 <table id="aggregateresults" class="settings">
-                    @for(key <- Utils.KEYS_TO_PARSE){<tr class="@key"><td>@key @Utils.getAggrMethodsMap.get(key) : </td><td>@(aggrResults.get(key).asInstanceOf[Number].longValue * controllers.utils.Utils.STATS_PERIOD_SEC)</td></tr>}
+                    @for(key <- Utils.KEYS_TO_PARSE){<tr class="@key"><td>@key @Utils.getAggrMethodsMap.get(key) : </td>
+                        <td>@if(key.equals(Utils.CONNECTIONS_METRIC) || key.equals(Utils.UNIQUE_CONNECTIONS_METRIC)){
+                            @aggrResults.get(key).asInstanceOf[Number].longValue
+                        }else{@(aggrResults.get(key).asInstanceOf[Number].longValue * controllers.utils.Utils.STATS_PERIOD_SEC)}</td></tr>}
                 </table>
                     }
             </div>
