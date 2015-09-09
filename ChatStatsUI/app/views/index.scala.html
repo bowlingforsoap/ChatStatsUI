@@ -99,29 +99,27 @@
                       timezoneDiff *= -1;
                   }
                   timezoneDiff *= 60 * 1000;
-                  //TODO:remove
-                  timezoneDiff = 0;
                   console.log("timezoneDiff -> " + timezoneDiff);
 
                   var labelsList = [];
                   labelsList.push('@Utils.CREATED_AT_KEY');
                   @for(key <- Utils.KEYS_TO_PARSE){labelsList.push('@Utils.getLegendLabelsMap.get(key)');}
 
-                  var requestedTimePeriod = new Date(@session.get("requestDate") - @session.get("requestedTimePeriod"));
+                  var requestedTimePeriod = new Date(@session.get("requestDate") - @session.get("requestedTimePeriod") + timezoneDiff);
 
                   var firstEntryDate = null;
                   var lastEntryDate = null;
 
                   @if(fetchedStats!=null){
                     @if(fetchedStats.first()!=null){
-                        firstEntryDate = new Date(@fetchedStats.first().get(Utils.CREATED_AT_KEY));
+                        firstEntryDate = new Date(@fetchedStats.first().get(Utils.CREATED_AT_KEY) + timezoneDiff);
                     }
                     @if(fetchedStats.first() != null && fetchedStats.last!=null){
-                        lastEntryDate = new Date(@fetchedStats.last.get(Utils.CREATED_AT_KEY));
+                        lastEntryDate = new Date(@fetchedStats.last.get(Utils.CREATED_AT_KEY) + timezoneDiff);
                     }
                   }
 
-                  var currentDate = new Date();
+                  var currentDate = new Date(new Date().getTime() + timezoneDiff);
                   var zeroEntry = [];
                   var dataset = [];
 
