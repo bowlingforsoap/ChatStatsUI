@@ -13,13 +13,14 @@ import play.mvc.Controller;
 import play.mvc.Result;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Map;
 
 public class Application extends Controller {
     public static final long HOUR = 60 * 60 * 1000;
     public static final long DAY = 24 * HOUR;
     public static final long MONTH = 31 * DAY;
-
+    public static final long SERVER_TIMEZONE_OFFSET = new Date().getTimezoneOffset();
     public static final String[] TIME_LENGTHS = {"hour", "day", "month"};
 
     private final DataFetcher dataFetcher;
@@ -43,7 +44,6 @@ public class Application extends Controller {
         String timeLength = session("timeLength");
         long requestDate = System.currentTimeMillis();
         long timeLengthValue;
-        int timezoneOffset;
         Map<String, Object> aggrResults = null;
         AggregateIterable<Document> fetchedApps = dataFetcher.fetchApps();
         FindIterable<Document> fetchedStats = null;
@@ -54,13 +54,10 @@ public class Application extends Controller {
         //check the data
         try {
             timeLengthValue = Long.valueOf(session("timeLengthValue"));
-            timezoneOffset = Integer.valueOf(session("timezoneOffset"));
         } catch (NumberFormatException e) {
             // default values
             timeLengthValue = 1;
-            timezoneOffset = 0;
             session("timeLengthValue", String.valueOf(timeLengthValue));
-            session("timezoneOffset", String.valueOf(timezoneOffset));
         }
 
         if (appId == null || timeLength == null || timeLength.length() == 0 || timeLengthValue <= 0 || appId.length() == 0) {

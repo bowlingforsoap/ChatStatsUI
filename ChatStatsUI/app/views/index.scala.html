@@ -58,7 +58,7 @@
                 @if(aggrResults != null && aggrResults.size() > 0){
                     <hr>
                 <table id="aggregateresults" class="settings">
-                    @for(key <- Utils.KEYS_TO_PARSE){<tr class="@key"><td>@key @Utils.getAggrMethodsMap.get(key) : </td><td>@aggrResults.get(key).asInstanceOf[Number].longValue</td></tr>}
+                    @for(key <- Utils.KEYS_TO_PARSE){<tr class="@key"><td>@key @Utils.getAggrMethodsMap.get(key) : </td><td>@(aggrResults.get(key).asInstanceOf[Number].longValue * controllers.utils.Utils.STATS_PERIOD_SEC)</td></tr>}
                 </table>
                     }
             </div>
@@ -93,6 +93,14 @@
 
             <!-- graph initialization -->
             <script type="text/javascript">
+                  var localTimezoneOffset = new Date().getTimezoneOffset();
+                  var timezoneDiff = Math.abs(@controllers.Application.SERVER_TIMEZONE_OFFSET - localTimezoneOffset);
+                  if (@controllers.Application.SERVER_TIMEZONE_OFFSET < localTimezoneOffset) {
+                      timezoneDiff *= -1;
+                  }
+                  timezoneDiff *= 60 * 1000;
+                  console.log("timezoneDiff -> " + timezoneDiff);
+
                   var labelsList = [];
                   labelsList.push('@Utils.CREATED_AT_KEY');
                   @for(key <- Utils.KEYS_TO_PARSE){labelsList.push('@Utils.getLegendLabelsMap.get(key)');}
@@ -127,7 +135,7 @@
                   }
 
                   @if(fetchedStats != null) {
-                    @for(doc: org.bson.Document <- fetchedStats) {dataset.push([@for(entry: java.util.Map.Entry[String, Object] <- doc.entrySet()) {@if(entry.getKey == Utils.CREATED_AT_KEY) {new Date(@entry.getValue),}else{@entry.getValue,}}]);}
+                    @for(doc: org.bson.Document <- fetchedStats) {dataset.push([@for(entry: java.util.Map.Entry[String, Object] <- doc.entrySet()) {@if(entry.getKey == Utils.CREATED_AT_KEY) {new Date(@entry.getValue + timezoneDiff),}else{@entry.getValue,}}]);}
                   }
 
                   if (lastEntryDate != null) {
@@ -196,20 +204,19 @@
 
                   //saves settings from the previous update and cleans the session
                   function setData() {
-                    document.getElementById('appId').value = '@session.get("appId")'
+                    document.getElementById('appId').value = '@session.get("appId")';
                     @if(session.get("timeLength") == null || session.get("timeLength").length == 0) {
                         //aka: if null -> 'day'
-                        document.getElementById('timeLength').value = '@controllers.Application.TIME_LENGTHS(0))'} else {
-                        document.getElementById('timeLength').value = '@session.get("timeLength")'
+                        document.getElementById('timeLength').value = '@controllers.Application.TIME_LENGTHS(0))';} else {
+                        document.getElementById('timeLength').value = '@session.get("timeLength")';
                     }
-                    document.getElementById('timeLengthValue').value = '@session.get("timeLengthValue")'
-                    document.getElementById("timezoneOffset").value = new Date().getTimezoneOffset();
+                    document.getElementById('timeLengthValue').value = '@session.get("timeLengthValue")';
                     aggregateResults = '@session.get("aggregateResults")';
                     if (aggregateResults != '') {
                         document.getElementById("aggregateResults").checked = true;
                     }
 
-                    '@session.remove("aggregateResults")'
+                    '@session.remove("aggregateResults")';
                   }
             </script>
 
@@ -219,7 +226,6 @@
 
             <div>
                 <div id="displaydiv">
-                        <input type="hidden" id="timezoneOffset" name="timezoneOffset">
                         <table id="displaytable">
                             <tr>
                                 <td align="center">
